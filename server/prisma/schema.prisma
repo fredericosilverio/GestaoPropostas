@@ -1,0 +1,245 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Enums (Handled as Strings for SQLite compatibility)
+// Perfil, SituacaoPCA, etc. definitions removed.
+
+// Models
+
+model Usuario {
+  id                   Int       @id @default(autoincrement())
+  nome_completo        String
+  cpf                  String    @unique
+  matricula            String    @unique
+  email                String    @unique
+  telefone             String?
+  perfil               String    @default("OPERADOR") // Enum: Perfil
+  unidade_vinculada    String?
+  senha_hash           String?
+  usa_ad               Boolean   @default(false)
+  ativo                Boolean   @default(true)
+  ultimo_acesso        DateTime?
+  data_expiracao_senha DateTime?
+  tentativas_falhas    Int       @default(0)
+  bloqueado_ate        DateTime?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+
+  // Relations
+  pcas_responsavel     Pca[]
+  demandas_responsavel Demanda[]     @relation("Responsavel")
+  demandas_ajustadas   Demanda[]     @relation("AjustadoPor")
+  itens_ajustados      Item[]        @relation("ItemAjustadoPor")
+  precos_aprovados     Preco[]       @relation("PrecoAprovadoPor")
+  precos_cadastrados   Preco[]       @relation("PrecoCadastradoPor")
+  anexos_upload        Anexo[]
+  logs                 HistoricoLog[]
+
+  @@map("usuario")
+}
+
+model Pca {
+  id               Int         @id @default(autoincrement())
+  ano              Int
+  numero_pca       String
+  orgao            String
+  situacao         String      @default("EM_ELABORACAO") // Enum: SituacaoPCA
+  data_criacao     DateTime    @default(now())
+  data_aprovacao   DateTime?
+  responsavel_id   Int
+  responsavel      Usuario     @relation(fields: [responsavel_id], references: [id])
+  observacoes      String?
+  versao           Int         @default(1)
+  versao_anterior_id Int?
+  versao_anterior  Pca?        @relation("VersaoPca", fields: [versao_anterior_id], references: [id])
+  proximas_versoes Pca[]       @relation("VersaoPca")
+  motivo_versao    String?
+  ativo            Boolean     @default(true)
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+
+  // Relations
+  demandas Demanda[]
+
+  @@unique([ano, numero_pca, orgao, versao])
+  @@map("pca")
+}
+
+model Demanda {
+  id                           Int             @id @default(autoincrement())
+  pca_id                       Int
+  pca                          Pca             @relation(fields: [pca_id], references: [id])
+  numero_projeto               Int
+  codigo_demanda               String          @unique
+  descricao                    String
+  justificativa_tecnica        String
+  justificativa_administrativa String
+  valor_estimado_global        Decimal?
+  valor_estimado_ajustado      Decimal?
+  justificativa_ajuste         String?
+  ajustado_por_id              Int?
+  ajustado_por                 Usuario?        @relation("AjustadoPor", fields: [ajustado_por_id], references: [id])
+  ajustado_em                  DateTime?
+  data_prevista_contratacao    DateTime
+  tipo_contratacao             String          // Enum: TipoContratacao
+  natureza_despesa             String          // Enum: NaturezaDespesa
+  elemento_despesa             String
+  unidade_demandante           String
+  responsavel_id               Int
+  responsavel                  Usuario         @relation("Responsavel", fields: [responsavel_id], references: [id])
+  centro_custo                 String
+  prazo_vigencia_meses         Int
+  cnae                         String?
+  fonte_recursos               String?
+  programa_acao                String?
+  processo_administrativo      String?
+  status                       String          @default("CADASTRADA") // Enum: StatusDemanda
+  data_cancelamento            DateTime?
+  justificativa_cancelamento   String?
+  motivo_cancelamento          String? 
+  numero_processo_licitatorio  String?
+  numero_contrato              String?
+  data_contrato                DateTime?
+  valor_contratado             Decimal?
+  cnpj_fornecedor_contratado   String?
+  razao_social_contratado      String?
+  observacoes                  String?
+  ativo                        Boolean         @default(true)
+  created_at                   DateTime        @default(now())
+  updated_at                   DateTime        @updatedAt
+
+  // Relations
+  itens Item[]
+
+  @@map("demanda")
+}
+
+model Item {
+  id                      Int      @id @default(autoincrement())
+  demanda_id              Int
+  demanda                 Demanda  @relation(fields: [demanda_id], references: [id], onDelete: Cascade)
+  codigo_item             Int
+  descricao               String
+  especificacoes_tecnicas String?
+  unidade_medida          String
+  quantidade              Decimal
+  elemento_despesa        String
+  marca_referencia        String?
+  codigo_catmat           String?
+  valor_estimado_unitario Decimal?
+  valor_estimado_total    Decimal?
+  valor_ajustado_unitario Decimal?
+  justificativa_ajuste    String?
+  ajustado_por_id         Int?
+  ajustado_por            Usuario? @relation("ItemAjustadoPor", fields: [ajustado_por_id], references: [id])
+  ajustado_em             DateTime?
+  observacoes             String?
+  analise_concluida       Boolean  @default(false)
+  data_conclusao_analise  DateTime?
+  ativo                   Boolean  @default(true)
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  // Relations
+  precos Preco[]
+
+  @@unique([demanda_id, codigo_item])
+  @@map("item")
+}
+
+model Preco {
+  id                   Int                @id @default(autoincrement())
+  item_id              Int
+  item                 Item               @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  fonte                String
+  tipo_fonte           String             // Enum: TipoFonte
+  valor_unitario       Decimal
+  data_coleta          DateTime
+  unidade_medida       String
+  cnpj_fornecedor      String?
+  razao_social         String?
+  cidade_uf            String?
+  telefone             String?
+  email                String?
+  numero_referencia    String?
+  link_fonte           String?
+  observacoes          String?
+  classificacao        String             // Enum: ClassificacaoPreco
+  percentual_variacao  Decimal?
+  justificativa_inclusao String?
+  solicitacao_aprovacao Boolean           @default(false)
+  aprovado             Boolean?
+  aprovado_por_id      Int?
+  aprovado_por         Usuario?           @relation("PrecoAprovadoPor", fields: [aprovado_por_id], references: [id])
+  aprovado_em          DateTime?
+  motivo_aprovacao     String?
+  cadastrado_por_id    Int
+  cadastrado_por       Usuario            @relation("PrecoCadastradoPor", fields: [cadastrado_por_id], references: [id])
+  ativo                Boolean            @default(true)
+  created_at           DateTime           @default(now())
+  updated_at           DateTime           @updatedAt
+
+  @@map("preco")
+}
+
+model Anexo {
+  id                   Int           @id @default(autoincrement())
+  entidade_tipo        String        // Enum: EntidadeAnexo
+  entidade_id          Int
+  nome_arquivo         String
+  nome_arquivo_storage String
+  extensao             String
+  tamanho_bytes        Int
+  mime_type            String
+  hash_md5             String
+  path_storage         String
+  descricao            String?
+  uploaded_by_id       Int
+  uploaded_by          Usuario       @relation(fields: [uploaded_by_id], references: [id])
+  ativo                Boolean       @default(true)
+  created_at           DateTime      @default(now())
+
+  @@map("anexo")
+}
+
+model HistoricoLog {
+  id             BigInt       @id @default(autoincrement())
+  usuario_id     Int?
+  usuario        Usuario?     @relation(fields: [usuario_id], references: [id])
+  data_hora      DateTime     @default(now())
+  acao           String       // Enum: AcaoLog
+  entidade_tipo  String
+  entidade_id    Int?
+  campo_alterado String?
+  valor_anterior String? // JSON
+  valor_novo     String? // JSON
+  descricao      String?
+  ip_origem      String?
+  user_agent     String?
+  resultado      String       @default("SUCESSO") // Enum: ResultadoLog
+  mensagem_erro  String?
+
+  @@map("historico_log")
+}
+
+model Configuracao {
+  id          Int      @id @default(autoincrement())
+  chave       String   @unique
+  valor       String
+  tipo        String   // texto, numero, booleano, json
+  descricao   String?
+  categoria   String
+  editavel    Boolean  @default(true)
+  updated_at  DateTime @updatedAt
+
+  @@map("configuracao")
+}
