@@ -6,6 +6,7 @@ dotenv.config();
 
 import { authRoutes } from './routes/authRoutes';
 import { userRoutes } from './routes/userRoutes';
+import { pcaRoutes } from './routes/pcaRoutes';
 
 const app = express();
 const port = process.env.PORT || 3333;
@@ -19,6 +20,7 @@ app.get('/', (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
+app.use('/pcas', pcaRoutes);
 
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);

@@ -1,6 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Login } from './pages/Login';
+import { PcaList } from './pages/pcas/PcaList';
+import { PcaForm } from './pages/pcas/PcaForm';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { signed, loading } = useAuth();
@@ -30,7 +32,29 @@ export default function App() {
           <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/dashboard" element={
             <PrivateRoute>
-              <DashboardLayout />
+              <DashboardLayout>
+                {/* Dashboard Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700">
+                    <h3 className="text-sm font-medium text-gray-500">Bem vindo</h3>
+                    {/* Placeholder for user email, will be rendered by DashboardLayout */}
+                  </div>
+                </div>
+              </DashboardLayout>
+            </PrivateRoute>
+          } />
+          <Route path="/pcas" element={
+            <PrivateRoute>
+              <DashboardLayout>
+                <PcaList />
+              </DashboardLayout>
+            </PrivateRoute>
+          } />
+          <Route path="/pcas/new" element={
+            <PrivateRoute>
+              <DashboardLayout>
+                <PcaForm />
+              </DashboardLayout>
             </PrivateRoute>
           } />
         </Routes>
@@ -40,7 +64,7 @@ export default function App() {
 }
 
 // Temporary Dashboard Component integrated for verification
-function DashboardLayout() {
+function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-zinc-900 font-sans text-gray-900 dark:text-gray-100">
@@ -50,15 +74,15 @@ function DashboardLayout() {
           <h1 className="text-xl font-bold text-primary">Gestão Propostas</h1>
         </div>
         <nav className="flex-1 p-4 space-y-1">
-          <a href="#" className="flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary/10 text-primary">
+          <Link to="/dashboard" className="flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary/10 text-primary">
             Dashboard
-          </a>
-          <a href="#" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
+          </Link>
+          <Link to="/pcas" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
             Meus PCAs
-          </a>
-          <a href="#" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
+          </Link>
+          <Link to="/demandas" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
             Demandas
-          </a>
+          </Link>
         </nav>
         <div className="p-4 border-t border-gray-200 dark:border-zinc-700">
           <div className="flex items-center justify-between">
@@ -81,12 +105,7 @@ function DashboardLayout() {
         </header>
 
         <main className="flex-1 overflow-auto p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700">
-              <h3 className="text-sm font-medium text-gray-500">Bem vindo</h3>
-              <p className="text-lg font-bold mt-2">{user?.email}</p>
-            </div>
-          </div>
+          {children}
         </main>
       </div>
     </div>
