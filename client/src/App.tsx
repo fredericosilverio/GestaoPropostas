@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Login } from './pages/Login';
 import { PcaList } from './pages/pcas/PcaList';
 import { PcaForm } from './pages/pcas/PcaForm';
+import { DemandaList } from './pages/demandas/DemandaList';
+import { DemandaForm } from './pages/demandas/DemandaForm';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { signed, loading } = useAuth();
@@ -33,11 +35,10 @@ export default function App() {
           <Route path="/dashboard" element={
             <PrivateRoute>
               <DashboardLayout>
-                {/* Dashboard Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                   <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700">
                     <h3 className="text-sm font-medium text-gray-500">Bem vindo</h3>
-                    {/* Placeholder for user email, will be rendered by DashboardLayout */}
+                    {/* Stats placeholder */}
                   </div>
                 </div>
               </DashboardLayout>
@@ -57,24 +58,36 @@ export default function App() {
               </DashboardLayout>
             </PrivateRoute>
           } />
+          <Route path="/demandas" element={
+            <PrivateRoute>
+              <DashboardLayout>
+                <DemandaList />
+              </DashboardLayout>
+            </PrivateRoute>
+          } />
+          <Route path="/demandas/new" element={
+            <PrivateRoute>
+              <DashboardLayout>
+                <DemandaForm />
+              </DashboardLayout>
+            </PrivateRoute>
+          } />
         </Routes>
       </Router>
     </AuthProvider>
   );
 }
 
-// Temporary Dashboard Component integrated for verification
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-zinc-900 font-sans text-gray-900 dark:text-gray-100">
-      {/* Sidebar */}
       <aside className="w-64 bg-white dark:bg-zinc-800 border-r border-gray-200 dark:border-zinc-700 hidden md:flex flex-col">
         <div className="p-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-center">
           <h1 className="text-xl font-bold text-primary">Gestão Propostas</h1>
         </div>
         <nav className="flex-1 p-4 space-y-1">
-          <Link to="/dashboard" className="flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary/10 text-primary">
+          <Link to="/dashboard" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
             Dashboard
           </Link>
           <Link to="/pcas" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
@@ -97,7 +110,6 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 bg-white dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between px-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Dashboard</h2>
