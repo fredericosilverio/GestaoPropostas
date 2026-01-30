@@ -80,7 +80,11 @@ export function DemandaList() {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{demanda.responsavel?.nome_completo}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <a href="#" className="text-primary hover:text-primary-light mr-4">Editar</a>
-                                    <a href="#" className="text-primary hover:text-primary-light">Detalhes</a>
+                                    <button
+                                        onClick={() => navigate(`/demandas/${demanda.id}`)}
+                                        className="text-primary hover:text-primary-light">
+                                        Detalhes
+                                    </button>
                                 </td>
                             </tr>
                         ))}

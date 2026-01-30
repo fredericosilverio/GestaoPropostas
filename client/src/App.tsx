@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Login } from './pages/Login';
@@ -5,6 +6,11 @@ import { PcaList } from './pages/pcas/PcaList';
 import { PcaForm } from './pages/pcas/PcaForm';
 import { DemandaList } from './pages/demandas/DemandaList';
 import { DemandaForm } from './pages/demandas/DemandaForm';
+import { DemandaDetail } from './pages/demandas/DemandaDetail';
+import { ItemForm } from './pages/demandas/ItemForm';
+import { PriceManager } from './pages/demandas/PriceManager';
+import { ReportPage } from './pages/reports/ReportPage';
+import { Dashboard } from './pages/dashboard/Dashboard';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { signed, loading } = useAuth();
@@ -35,12 +41,7 @@ export default function App() {
           <Route path="/dashboard" element={
             <PrivateRoute>
               <DashboardLayout>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700">
-                    <h3 className="text-sm font-medium text-gray-500">Bem vindo</h3>
-                    {/* Stats placeholder */}
-                  </div>
-                </div>
+                <Dashboard />
               </DashboardLayout>
             </PrivateRoute>
           } />
@@ -69,6 +70,34 @@ export default function App() {
             <PrivateRoute>
               <DashboardLayout>
                 <DemandaForm />
+              </DashboardLayout>
+            </PrivateRoute>
+          } />
+          <Route path="/demandas/:id" element={
+            <PrivateRoute>
+              <DashboardLayout>
+                <DemandaDetail />
+              </DashboardLayout>
+            </PrivateRoute>
+          } />
+          <Route path="/demandas/:demandaId/itens/new" element={
+            <PrivateRoute>
+              <DashboardLayout>
+                <ItemForm />
+              </DashboardLayout>
+            </PrivateRoute>
+          } />
+          <Route path="/itens/:itemId/precos" element={
+            <PrivateRoute>
+              <DashboardLayout>
+                <PriceManager />
+              </DashboardLayout>
+            </PrivateRoute>
+          } />
+          <Route path="/reports/market-analysis/:id" element={
+            <PrivateRoute>
+              <DashboardLayout>
+                <ReportPage />
               </DashboardLayout>
             </PrivateRoute>
           } />

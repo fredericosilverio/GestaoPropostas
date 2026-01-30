@@ -6,10 +6,12 @@ const authService = new AuthService();
 export class AuthController {
     async login(req: Request, res: Response) {
         try {
-            const { email, senha } = req.body;
-            const result = await authService.login(email, senha);
+            require('fs').appendFileSync('controller.log', `Login Request: ${JSON.stringify(req.body)}\n`);
+            const { email, password } = req.body;
+            const result = await authService.login(email, password);
             res.json(result);
         } catch (error: any) {
+            require('fs').appendFileSync('controller.log', `Login Error: ${error.message}\nStack: ${error.stack}\n`);
             res.status(401).json({ error: error.message });
         }
     }

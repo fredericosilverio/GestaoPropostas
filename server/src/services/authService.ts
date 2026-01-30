@@ -1,6 +1,7 @@
 import { PrismaClient, Usuario } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import * as fs from 'fs';
 
 const prisma = new PrismaClient();
 
@@ -13,6 +14,7 @@ export class AuthService {
         });
 
         if (!usuario) {
+            fs.appendFileSync('debug.log', `User not found: ${email}\n`);
             throw new Error('Credenciais inválidas');
         }
 
