@@ -65,6 +65,33 @@ export class DemandaController {
         }
     }
 
+    async initiateContracting(req: Request, res: Response) {
+        try {
+            const id = Number(req.params.id);
+            const { numero_processo } = req.body;
+            // @ts-ignore
+            const userId = req.user.id;
+
+            const demanda = await demandaService.initiateContracting(id, numero_processo, userId);
+            res.json(demanda);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async finalizeContract(req: Request, res: Response) {
+        try {
+            const id = Number(req.params.id);
+            // @ts-ignore
+            const userId = req.user.id;
+
+            const demanda = await demandaService.finalizeContract(id, req.body, userId);
+            res.json(demanda);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
     async delete(req: Request, res: Response) {
         try {
             const id = Number(req.params.id);

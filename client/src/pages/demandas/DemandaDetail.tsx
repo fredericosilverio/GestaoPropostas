@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
+import { InitiateContractingModal, FinalizeContractModal } from './ContractingModals';
 
 interface Item {
     id: number;
@@ -15,7 +16,7 @@ interface Item {
     };
 }
 
-interface DemandaDetail {
+interface DemandaDetailType {
     id: number;
     codigo_demanda: string;
     descricao: string;
@@ -23,11 +24,14 @@ interface DemandaDetail {
     itens: Item[];
 }
 
+
+
 export function DemandaDetail() {
-    const { id } = useParams();
     const navigate = useNavigate();
-    const [demanda, setDemanda] = useState<DemandaDetail | null>(null);
+    const [demanda, setDemanda] = useState<DemandaDetailType | null>(null);
     const [loading, setLoading] = useState(true);
+    const [showInitiateModal, setShowInitiateModal] = useState(false);
+    const [showFinalizeModal, setShowFinalizeModal] = useState(false);
 
     useEffect(() => {
         loadDemanda();
@@ -36,13 +40,6 @@ export function DemandaDetail() {
     async function loadDemanda() {
         try {
             const response = await api.get(`/demandas/${id}`);
-            // Also fetch items with stats if simpler, or use nested include from backend
-            // Our backend findById includes items, but we need items count of prices
-            // Let's rely on standard endpoints or ensure backend includes what we need. 
-            // The DemandaService.findById DOES include items. 
-            // We might need to fetch items separately to get the specific Preco count if not included.
-
-            // Actually, let's fetch items from /itens?demanda_id=X for better granularity
             const itemsResponse = await api.get(`/itens?demanda_id=${id}`);
 
             setDemanda({
@@ -68,27 +65,51 @@ export function DemandaDetail() {
                         <p className="text-gray-500 dark:text-gray-400 mt-1">{demanda.descricao}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-sm font-semibold
-                         ${demanda.status === 'CONTRATADA' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                         ${demanda.status === 'CONTRATADA' ? 'bg-green-100 text-green-800' :
+                            demanda.status === 'EM_CONTRATACAO' ? 'bg-orange-100 text-orange-800' :
+                                demanda.status === 'ESTIMADA' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
                         {demanda.status}
                     </span>
                 </div>
-                <div className="mt-4 flex justify-end">
+
+                <div className="mt-4 flex justify-end gap-3">
+                    {/* Report Button */}
                     <button
                         onClick={() => navigate(`/reports/market-analysis/${demanda.id}`)}
                         className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2">
-                        <span>📊</span> Gerar Relatório de Estimativa
+                        <span>📊</span> Relatório
                     </button>
+
+                    {/* Contracting Buttons */}
+                    {demanda.status === 'ESTIMADA' && (
+                        <button
+                            onClick={() => setShowInitiateModal(true)}
+                            className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md text-sm">
+                            Iniciar Contratação
+                        </button>
+                    )}
+
+                    {demanda.status === 'EM_CONTRATACAO' && (
+                        <button
+                            onClick={() => setShowFinalizeModal(true)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm">
+                            Registrar Contrato
+                        </button>
+                    )}
                 </div>
             </div>
 
+            {/* List Items ... */}
             <div className="bg-white dark:bg-zinc-800 shadow rounded-lg p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Itens da Demanda</h2>
-                    <button
-                        onClick={() => navigate(`/demandas/${id}/itens/novo`)}
-                        className="bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-md text-sm">
-                        Adicionar Item
-                    </button>
+                    {demanda.status !== 'CONTRATADA' && (
+                        <button
+                            onClick={() => navigate(`/demandas/${id}/itens/novo`)}
+                            className="bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-md text-sm">
+                            Adicionar Item
+                        </button>
+                    )}
                 </div>
 
                 <div className="overflow-x-auto">
@@ -133,6 +154,24 @@ export function DemandaDetail() {
                     </table>
                 </div>
             </div>
+
+            {/* Modals */}
+            {demanda && (
+                <>
+                    <InitiateContractingModal
+                        isOpen={showInitiateModal}
+                        onClose={() => setShowInitiateModal(false)}
+                        onSuccess={loadDemanda}
+                        demandaId={demanda.id}
+                    />
+                    <FinalizeContractModal
+                        isOpen={showFinalizeModal}
+                        onClose={() => setShowFinalizeModal(false)}
+                        onSuccess={loadDemanda}
+                        demandaId={demanda.id}
+                    />
+                </>
+            )}
         </div>
     );
 }

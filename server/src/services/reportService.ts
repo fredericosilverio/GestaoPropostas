@@ -10,7 +10,7 @@ export class ReportService {
         const demanda = await prisma.demanda.findUnique({
             where: { id: demandaId },
             include: {
-                usuario: { // Responsável
+                responsavel: {
                     select: { nome_completo: true, email: true }
                 },
                 pca: true,
@@ -54,10 +54,10 @@ export class ReportService {
                 codigo: demanda.codigo_demanda,
                 descricao: demanda.descricao,
                 justificativa: demanda.justificativa_tecnica,
-                responsavel: demanda.usuario.nome_completo,
-                pca: demanda.pca.ano,
+                responsavel: demanda.responsavel.nome_completo,
+                pca: demanda.pca.numero_pca ? `${demanda.pca.numero_pca}/${demanda.pca.ano}` : demanda.pca.ano,
                 unidade_demandante: demanda.unidade_demandante,
-                data_criacao: demanda.data_criacao
+                data_criacao: demanda.created_at
             },
             itens: itensReport,
             resumo: {

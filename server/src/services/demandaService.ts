@@ -62,6 +62,48 @@ export class DemandaService {
         });
     }
 
+    async initiateContracting(id: number, numeroProcesso: string, userId: number) {
+        const demanda = await prisma.demanda.findUnique({ where: { id } });
+        if (!demanda) throw new Error('Demanda não encontrada');
+
+        if (demanda.status !== 'ESTIMADA') {
+            throw new Error('A apenas demandas ESTIMADAS podem ir para contratação.');
+        }
+
+        return prisma.demanda.update({
+            where: { id },
+            data: {
+                status: 'EM_CONTRATACAO',
+                numero_processo_licitatorio: numeroProcesso,
+                ajustado_por_id: userId, // Tracking who initiated
+                ajustado_em: new Date()
+            }
+        });
+    }
+
+    async finalizeContract(id: number, contractData: any, userId: number) {
+        const demanda = await prisma.demanda.findUnique({ where: { id } });
+        if (!demanda) throw new Error('Demanda não encontrada');
+
+        if (demanda.status !== 'EM_CONTRATACAO') {
+            throw new Error('A demanda deve estar EM_CONTRATACAO para ser finalizada.');
+        }
+
+        return prisma.demanda.update({
+            where: { id },
+            data: {
+                status: 'CONTRATADA',
+                numero_contrato: contractData.numero_contrato,
+                data_contrato: new Date(contractData.data_contrato),
+                valor_contratado: contractData.valor_contratado,
+                cnpj_fornecedor_contratado: contractData.cnpj_fornecedor,
+                razao_social_contratado: contractData.razao_social,
+                ajustado_por_id: userId,
+                ajustado_em: new Date()
+            }
+        });
+    }
+
     async changeStatus(id: number, newStatus: string, userId: number, justificativa?: string) {
         const demanda = await prisma.demanda.findUnique({ where: { id } });
         if (!demanda) throw new Error('Demanda não encontrada');

@@ -15,6 +15,8 @@ demandaRoutes.post('/', demandaController.create); // Any authenticated user can
 
 demandaRoutes.put('/:id', demandaController.update);
 demandaRoutes.patch('/:id/status', demandaController.changeStatus);
+demandaRoutes.post('/:id/initiate-contracting', demandaController.initiateContracting);
+demandaRoutes.post('/:id/finalize-contract', demandaController.finalizeContract);
 demandaRoutes.delete('/:id', demandaController.delete);
 
 export { demandaRoutes };
