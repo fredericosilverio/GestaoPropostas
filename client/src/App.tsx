@@ -1,22 +1,35 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { DashboardLayout } from './layouts/DashboardLayout';
 import { Login } from './pages/Login';
 import { PcaList } from './pages/pcas/PcaList';
 import { PcaForm } from './pages/pcas/PcaForm';
+import { PcaDetail } from './pages/pcas/PcaDetail';
 import { DemandaList } from './pages/demandas/DemandaList';
 import { DemandaForm } from './pages/demandas/DemandaForm';
 import { DemandaDetail } from './pages/demandas/DemandaDetail';
+import { ProposalEntry } from './pages/demandas/ProposalEntry';
 import { ItemForm } from './pages/demandas/ItemForm';
 import { PriceManager } from './pages/demandas/PriceManager';
 import { ReportPage } from './pages/reports/ReportPage';
+import { FornecedorList } from './pages/fornecedores/FornecedorList';
+import { FornecedorForm } from './pages/fornecedores/FornecedorForm';
+import { AuditPage } from './pages/admin/AuditPage';
 import { Dashboard } from './pages/dashboard/Dashboard';
+import { LoadingOverlay } from './components/LoadingSpinner';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { signed, loading } = useAuth();
 
   if (loading) {
-    return <div className="h-screen flex items-center justify-center">Carregando...</div>;
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-100 dark:bg-zinc-900">
+        <LoadingOverlay message="Verificando autenticação..." />
+      </div>
+    );
   }
 
   return signed ? <>{children}</> : <Navigate to="/" />;
@@ -26,129 +39,68 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { signed, loading } = useAuth();
 
   if (loading) {
-    return <div className="h-screen flex items-center justify-center">Carregando...</div>;
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-100 dark:bg-zinc-900">
+        <LoadingOverlay message="Carregando..." />
+      </div>
+    );
   }
 
   return signed ? <Navigate to="/dashboard" /> : <>{children}</>;
 };
 
+// Wrapper component for private routes with layout
+const PrivateLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <PrivateRoute>
+    <DashboardLayout>
+      {children}
+    </DashboardLayout>
+  </PrivateRoute>
+);
+
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/dashboard" element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <Dashboard />
-              </DashboardLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/pcas" element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <PcaList />
-              </DashboardLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/pcas/new" element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <PcaForm />
-              </DashboardLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/demandas" element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <DemandaList />
-              </DashboardLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/demandas/new" element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <DemandaForm />
-              </DashboardLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/demandas/:id" element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <DemandaDetail />
-              </DashboardLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/demandas/:demandaId/itens/new" element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <ItemForm />
-              </DashboardLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/itens/:itemId/precos" element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <PriceManager />
-              </DashboardLayout>
-            </PrivateRoute>
-          } />
-          <Route path="/reports/market-analysis/:id" element={
-            <PrivateRoute>
-              <DashboardLayout>
-                <ReportPage />
-              </DashboardLayout>
-            </PrivateRoute>
-          } />
-        </Routes>
-      </Router>
-    </AuthProvider>
-  );
-}
+    <ThemeProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <Router>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
 
-function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, signOut } = useAuth();
-  return (
-    <div className="flex h-screen bg-gray-100 dark:bg-zinc-900 font-sans text-gray-900 dark:text-gray-100">
-      <aside className="w-64 bg-white dark:bg-zinc-800 border-r border-gray-200 dark:border-zinc-700 hidden md:flex flex-col">
-        <div className="p-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-center">
-          <h1 className="text-xl font-bold text-primary">Gestão Propostas</h1>
-        </div>
-        <nav className="flex-1 p-4 space-y-1">
-          <Link to="/dashboard" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
-            Dashboard
-          </Link>
-          <Link to="/pcas" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
-            Meus PCAs
-          </Link>
-          <Link to="/demandas" className="flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
-            Demandas
-          </Link>
-        </nav>
-        <div className="p-4 border-t border-gray-200 dark:border-zinc-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="max-w-[100px]">
-                <p className="text-sm font-medium truncate">{user?.nome_completo}</p>
-                <p className="text-xs text-gray-500 truncate">{user?.perfil}</p>
-              </div>
-            </div>
-            <button onClick={signOut} className="text-xs text-red-500 hover:text-red-700">Sair</button>
-          </div>
-        </div>
-      </aside>
+              {/* Private Routes */}
+              <Route path="/dashboard" element={<PrivateLayout><Dashboard /></PrivateLayout>} />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-white dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between px-6">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Dashboard</h2>
-          <button className="md:hidden p-2 rounded-md hover:bg-gray-100">Menu</button>
-        </header>
+              {/* PCAs */}
+              <Route path="/pcas" element={<PrivateLayout><PcaList /></PrivateLayout>} />
+              <Route path="/pcas/new" element={<PrivateLayout><PcaForm /></PrivateLayout>} />
+              <Route path="/pcas/:id" element={<PrivateLayout><PcaDetail /></PrivateLayout>} />
+              <Route path="/pcas/:id/edit" element={<PrivateLayout><PcaForm /></PrivateLayout>} />
 
-        <main className="flex-1 overflow-auto p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+              {/* Demandas */}
+              <Route path="/demandas" element={<PrivateLayout><DemandaList /></PrivateLayout>} />
+              <Route path="/demandas/new" element={<PrivateLayout><DemandaForm /></PrivateLayout>} />
+              <Route path="/demandas/:id" element={<PrivateLayout><DemandaDetail /></PrivateLayout>} />
+              <Route path="/demandas/:id/proposta-lote" element={<PrivateLayout><ProposalEntry /></PrivateLayout>} />
+              <Route path="/demandas/:demandaId/itens/novo" element={<PrivateLayout><ItemForm /></PrivateLayout>} />
+
+              {/* Items & Prices */}
+              <Route path="/itens/:itemId/precos" element={<PrivateLayout><PriceManager /></PrivateLayout>} />
+
+              {/* Reports */}
+              <Route path="/reports/market-analysis/:id" element={<PrivateLayout><ReportPage /></PrivateLayout>} />
+
+              {/* Fornecedores */}
+              <Route path="/fornecedores" element={<PrivateLayout><FornecedorList /></PrivateLayout>} />
+              <Route path="/fornecedores/novo" element={<PrivateLayout><FornecedorForm /></PrivateLayout>} />
+              <Route path="/fornecedores/:id" element={<PrivateLayout><FornecedorForm /></PrivateLayout>} />
+
+              {/* Admin */}
+              <Route path="/audit" element={<PrivateLayout><AuditPage /></PrivateLayout>} />
+            </Routes>
+          </Router>
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

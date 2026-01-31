@@ -1,0 +1,32 @@
+=== DEBUG STATISTICS ===
+
+PCAs ativos: [
+  {
+    id: 1,
+    ano: 2026,
+    orgao: 'Plano de Contrata├º├úo de TIC',
+    situacao: 'EM_EXECUCAO'
+  }
+]
+IDs de PCAs: [ 1 ]
+
+Todas as demandas: [
+  {
+    id: 1,
+    pca_id: 1,
+    ativo: true,
+    status: 'EM_CONTRATACAO',
+    tipo_contratacao: 'NOVA',
+    natureza_despesa: 'INVESTIMENTO',
+    valor_estimado_global: null
+  }
+]
+
+Demandas filtradas para estat├¡sticas: [
+  {
+    tipo_contratacao: 'NOVA',
+    natureza_despesa: 'INVESTIMENTO',
+    valor_estimado_global: null
+  }
+]
+Total: 1

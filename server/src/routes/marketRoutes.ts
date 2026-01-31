@@ -20,6 +20,10 @@ itemRoutes.put('/:id', itemController.update);
 itemRoutes.delete('/:id', itemController.delete);
 
 // Prices
+precoRoutes.post('/batch-entry', (req, res, next) => {
+    console.log(`[DEBUG] POST /precos/batch-entry hit`);
+    next();
+}, precoController.createBatch);
 precoRoutes.get('/', precoController.list);
 precoRoutes.post('/', precoController.create);
 precoRoutes.delete('/:id', precoController.delete);

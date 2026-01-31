@@ -1,8 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import { MarketAnalysisService } from './marketAnalysisService';
+import { AuditService } from './AuditService';
 
 const prisma = new PrismaClient();
 const marketAnalysisService = new MarketAnalysisService();
+const auditService = new AuditService();
 
 export class ItemService {
     async listByDemanda(demandaId: number) {
@@ -23,7 +25,7 @@ export class ItemService {
         });
     }
 
-    async create(data: any) {
+    async create(data: any, userId: number) {
         // Determine next item number for the demanda
         const lastItem = await prisma.item.findFirst({
             where: { demanda_id: data.demanda_id },
@@ -37,6 +39,14 @@ export class ItemService {
                 ...data,
                 codigo_item
             }
+        });
+
+        await auditService.log({
+            usuario_id: userId,
+            acao: 'CRIACAO',
+            entidade_tipo: 'ITEM',
+            entidade_id: item.id,
+            descricao: `Item ${codigo_item} adicionado à demanda ${data.demanda_id}`
         });
 
         // Trigger 1: Cadastrada -> Em Análise (First item)
@@ -54,14 +64,32 @@ export class ItemService {
         return item;
     }
 
-    async update(id: number, data: any) {
-        return prisma.item.update({
+    async update(id: number, data: any, userId: number) {
+        const updated = await prisma.item.update({
             where: { id },
             data
         });
+
+        await auditService.log({
+            usuario_id: userId,
+            acao: 'ATUALIZACAO',
+            entidade_tipo: 'ITEM',
+            entidade_id: id,
+            descricao: `Item atualizado.`
+        });
+
+        return updated;
     }
 
-    async delete(id: number) {
+    async delete(id: number, userId: number) {
+        const item = await prisma.item.findUnique({ where: { id } });
+        await auditService.log({
+            usuario_id: userId,
+            acao: 'EXCLUSAO',
+            entidade_tipo: 'ITEM',
+            entidade_id: id,
+            descricao: `Item ${item?.codigo_item} excluído.`
+        });
         return prisma.item.delete({ where: { id } });
     }
 

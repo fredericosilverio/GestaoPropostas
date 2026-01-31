@@ -1,20 +1,26 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
+import { LoadingOverlay } from '../../components/LoadingSpinner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import type { MarketAnalysisReport } from '../../types/api';
 
 export function ReportPage() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [report, setReport] = useState<any>(null);
+    const [report, setReport] = useState<MarketAnalysisReport | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const printRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         api.get(`/reports/market-analysis/${id}`)
             .then(res => setReport(res.data))
-            .catch(err => console.error(err))
+            .catch(err => {
+                console.error(err);
+                setError('Erro ao carregar relatório');
+            })
             .finally(() => setLoading(false));
     }, [id]);
 
@@ -23,25 +29,62 @@ export function ReportPage() {
     };
 
     const handleExportPDF = async () => {
-        if (!printRef.current) return;
-
         try {
-            const canvas = await html2canvas(printRef.current, { scale: 2 });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            const response = await api.get(`/reports/market-analysis/${id}/pdf`, {
+                responseType: 'blob'
+            });
 
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`Relatorio_Analise_Mercado_${report?.demanda?.codigo}.pdf`);
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `relatorio_analise_${report?.demanda?.codigo || id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error('Erro ao gerar PDF', error);
-            alert('Erro ao gerar PDF');
+            console.error('Erro ao baixar PDF', error);
+            alert('Erro ao gerar PDF. Verifique se o servidor está rodando.');
         }
     };
 
-    if (loading) return <div className="p-8 text-center">Carregando relatório...</div>;
-    if (!report) return <div className="p-8 text-center text-red-500">Relatório não encontrado</div>;
+    const handleExportExcel = async () => {
+        try {
+            const response = await api.get(`/reports/market-analysis/${id}/export`, {
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `relatorio_analise_mercado_${report?.demanda?.codigo}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            console.error('Erro ao baixar Excel', error);
+            alert('Erro ao baixar Excel');
+        }
+    };
+
+    if (loading) {
+        return <LoadingOverlay message="Carregando relatório..." />;
+    }
+
+    if (error || !report) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12">
+                <div className="text-5xl mb-4">📊</div>
+                <p className="text-gray-500 dark:text-gray-400">{error || 'Relatório não encontrado.'}</p>
+                <button
+                    onClick={() => navigate(-1)}
+                    className="mt-4 text-primary hover:text-primary-light"
+                >
+                    ← Voltar
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-zinc-900 p-8">
@@ -51,10 +94,13 @@ export function ReportPage() {
                 </button>
                 <div className="space-x-4">
                     <button onClick={handlePrint} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                        Imprimir / Salvar PDF (Nativo)
+                        Imprimir
                     </button>
                     <button onClick={handleExportPDF} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                        Download PDF (Gerado)
+                        PDF (Gerado)
+                    </button>
+                    <button onClick={handleExportExcel} className="bg-green-800 text-white px-4 py-2 rounded hover:bg-green-900 border border-green-700">
+                        Excel
                     </button>
                 </div>
             </div>
@@ -168,7 +214,7 @@ export function ReportPage() {
                                 <div><strong>Média:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.estatisticas.media)}</div>
                                 <div><strong>Mediana:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.estatisticas.mediana)}</div>
                                 <div><strong>Desvio Padrão:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.estatisticas.desvioPadrao)}</div>
-                                <div><strong>CV:</strong> {item.estatisticas.cv.toFixed(2)}%</div>
+                                <div><strong>CV:</strong> {(item.estatisticas?.cv ?? 0).toFixed(2)}%</div>
                             </div>
                         </div>
                     ))}
@@ -207,6 +253,6 @@ export function ReportPage() {
                     }
                 `}
             </style>
-        </div>
+        </div >
     );
 }

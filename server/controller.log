@@ -12,3 +12,31 @@ Stack: Error: Illegal arguments: undefined, string
     at async login (C:\DEV\GestaoPropostas\server\src\controllers\authController.ts:11:28)
 Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
 Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@sistema.gov.br","senha":"Admin@123"}
+Login Error: Credenciais inválidas
+Stack: Error: Credenciais inválidas
+    at AuthService.login (C:\DEV\GestaoPropostas\server\src\services\authService.ts:18:19)
+    at async login (C:\DEV\GestaoPropostas\server\src\controllers\authController.ts:11:28)
+Login Request: {"email":"admin@gestaopropostas.gov.br","senha":"admin123"}
+Login Error: Illegal arguments: undefined, string
+Stack: Error: Illegal arguments: undefined, string
+    at _async (C:\DEV\GestaoPropostas\server\node_modules\bcryptjs\umd\index.js:305:15)
+    at C:\DEV\GestaoPropostas\server\node_modules\bcryptjs\umd\index.js:335:11
+    at new Promise (<anonymous>)
+    at Object.compare (C:\DEV\GestaoPropostas\server\node_modules\bcryptjs\umd\index.js:334:16)
+    at AuthService.login (C:\DEV\GestaoPropostas\server\src\services\authService.ts:30:42)
+    at async login (C:\DEV\GestaoPropostas\server\src\controllers\authController.ts:11:28)
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}
+Login Request: {"email":"admin@gestaopropostas.gov.br","password":"admin123"}

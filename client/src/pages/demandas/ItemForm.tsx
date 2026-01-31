@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 
 export function ItemForm() {
     const { demandaId } = useParams();
     const navigate = useNavigate();
+    const { addToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [descricao, setDescricao] = useState('');
     const [unidade, setUnidade] = useState('');
@@ -22,12 +24,12 @@ export function ItemForm() {
                 unidade_medida: unidade,
                 quantidade: Number(quantidade),
                 elemento_despesa: elementoDespesa
-                // Other fields optional or calculated
             });
+            addToast({ type: 'success', title: 'Sucesso', description: 'Item criado com sucesso!' });
             navigate(`/demandas/${demandaId}`);
         } catch (error) {
             console.error(error);
-            alert('Erro ao criar item');
+            addToast({ type: 'error', title: 'Erro', description: 'Erro ao criar item' });
         } finally {
             setLoading(false);
         }
@@ -39,24 +41,62 @@ export function ItemForm() {
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição</label>
-                    <input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100" required />
+                    <input
+                        type="text"
+                        value={descricao}
+                        onChange={e => setDescricao(e.target.value)}
+                        className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100 focus:ring-primary focus:border-primary"
+                        required
+                    />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Unidade</label>
-                        <input type="text" value={unidade} onChange={e => setUnidade(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100" required />
+                        <input
+                            type="text"
+                            value={unidade}
+                            onChange={e => setUnidade(e.target.value)}
+                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100 focus:ring-primary focus:border-primary"
+                            required
+                            placeholder="Ex: UN, KG, M"
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Quantidade</label>
-                        <input type="number" value={quantidade} onChange={e => setQuantidade(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100" required />
+                        <input
+                            type="number"
+                            value={quantidade}
+                            onChange={e => setQuantidade(e.target.value)}
+                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100 focus:ring-primary focus:border-primary"
+                            required
+                        />
                     </div>
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Elemento Despesa</label>
-                    <input type="text" value={elementoDespesa} onChange={e => setElementoDespesa(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100" required />
+                    <input
+                        type="text"
+                        value={elementoDespesa}
+                        onChange={e => setElementoDespesa(e.target.value)}
+                        className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100 focus:ring-primary focus:border-primary"
+                        required
+                    />
                 </div>
-                <div className="flex justify-end pt-4">
-                    <button type="submit" disabled={loading} className="bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-md transition-colors">Salvar</button>
+                <div className="flex justify-end gap-3 pt-4">
+                    <button
+                        type="button"
+                        onClick={() => navigate(-1)}
+                        className="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-md transition-colors disabled:opacity-50"
+                    >
+                        {loading ? 'Salvando...' : 'Salvar'}
+                    </button>
                 </div>
             </form>
         </div>

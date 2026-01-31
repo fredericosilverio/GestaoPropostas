@@ -1,36 +1,55 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
-
-interface Preco {
-    id: number;
-    valor_unitario: number;
-    fonte: string;
-    cnpj_fornecedor: string;
-    ativo: boolean;
-    classificacao: string;
-    percentual_variacao: number;
-    unidade_medida: string;
-    data_coleta: string;
-}
-
-interface ItemStats {
-    valor_estimado_unitario: number;
-    // We could fetch extended stats if provided by backend, 
-    // for now we calculate limits locally or assume backend provided valid item value
-}
+import { LoadingOverlay } from '../../components/LoadingSpinner';
+import { StatusBadge } from '../../components/StatusBadge';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { AttachmentList } from '../../components/AttachmentList';
+import { FornecedorSelect } from '../../components/FornecedorSelect';
+import { useToast } from '../../contexts/ToastContext';
+import { validateCNPJ, formatCNPJ } from '../../utils/validators';
+import type { Preco, Anexo, Fornecedor } from '../../types/api';
 
 export function PriceManager() {
     const { itemId } = useParams();
     const navigate = useNavigate();
+    const { addToast } = useToast();
     const [prices, setPrices] = useState<Preco[]>([]);
-    const [itemData, setItemData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     // Form state
+    const [fornecedorId, setFornecedorId] = useState<number | null>(null);
     const [valor, setValor] = useState('');
     const [fonte, setFonte] = useState('');
     const [cnpj, setCnpj] = useState('');
+    const [cnpjError, setCnpjError] = useState('');
+
+    async function handleFornecedorChange(id: number | null) {
+        setFornecedorId(id);
+        if (id) {
+            try {
+                const res = await api.get(`/fornecedores/${id}`);
+                const f: Fornecedor = res.data;
+                setFonte(f.nome_fantasia || f.razao_social);
+                setCnpj(f.cnpj);
+            } catch (error) {
+                console.error('Error fetching supplier', error);
+            }
+        } else {
+            setFonte('');
+            setCnpj('');
+        }
+    }
+
+    // Delete confirmation
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    // File upload state
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [expandedPriceId, setExpandedPriceId] = useState<number | null>(null);
+    const [priceAttachments, setPriceAttachments] = useState<Record<number, Anexo[]>>({});
 
     useEffect(() => {
         loadData();
@@ -38,49 +57,16 @@ export function PriceManager() {
 
     async function loadData() {
         try {
-            const [pricesRes, itemRes] = await Promise.all([
-                api.get(`/precos?item_id=${itemId}`),
-                api.get(`/itens?demanda_id=PlaceholderOnlyForType`)
-                // Optimization: We need efficient item fetch. 
-                // For now, let's assume we can get updated item info.
-                // Actually the listByItem endpoint is for prices.
-            ]);
-
-            // To get item stats (updated median), we need to fetch the item details again
-            // Or rely on the fact that prices endpoint interaction triggers updates.
-            // Let's rely on listing prices.
+            const pricesRes = await api.get(`/precos?item_id=${itemId}`);
             setPrices(pricesRes.data);
-
-            // Get Item Detail specifically to show Stats
-            // We need a specific endpoint GET /itens/:id or filter list. 
-            // Reuse generic approach for now:
-            // Since we don't have GET /itens/:id exposed directly in our simple controller list logic (it uses query),
-            // we will fetch prices and calculate visual stats or rely on what we have.
-            // Let's calculate visual stats purely for UI feedback if backend doesn't return them in separate object.
-            // BUT backend updates 'valor_estimado_unitario' on Item.
-            // Let's try to fetch the item to show the Median.
-            // Assuming we added the route or we can use the list.
-
-            // Temporary: fetch from list (inefficient but works for MVP)
-            // Ideally we'd have GET /itens/:id
-
         } catch (err) {
             console.error(err);
+            addToast({ type: 'error', title: 'Erro', description: 'Erro ao carregar preços' });
         } finally {
             setLoading(false);
         }
-
-        // Fetch specific item to get updated mean/median
-        // Note: Our controller 'list' returns array. findById is internal service.
-        // Note: We need to expose findById in controller or use list filter.
-        // List filter by demanda_id is available. By item_id? No.
-        // Let's blindly assume we can just calculate stats on frontend for display 
-        // OR fix the backend to return stats. Backend is single source of truth.
-        // Let's add GET /itens/:id to controller/routes quickly?
-        // Or just trust the process.
     }
 
-    // Improved loader
     async function refresh() {
         const res = await api.get(`/precos?item_id=${itemId}`);
         setPrices(res.data);
@@ -88,90 +74,187 @@ export function PriceManager() {
 
     async function handleAddPrice(e: React.FormEvent) {
         e.preventDefault();
+
+        // Validar anexo obrigatório
+        if (selectedFiles.length === 0) {
+            addToast({ type: 'error', title: 'Anexo Obrigatório', description: 'É necessário anexar ao menos 1 evidência (orçamento, print, proposta).' });
+            return;
+        }
+
         try {
-            await api.post('/precos', {
+            // 1. Criar o preço
+            const precoRes = await api.post('/precos', {
                 item_id: Number(itemId),
                 valor_unitario: Number(valor),
                 fonte,
                 cnpj_fornecedor: cnpj,
-                tipo_fonte: 'COTACAO_FORNECEDOR', // Default for MVP
-                unidade_medida: 'UN', // Should match item
+                fornecedor_id: fornecedorId,
+                tipo_fonte: 'COTACAO_FORNECEDOR',
+                unidade_medida: 'UN',
                 data_coleta: new Date(),
                 classificacao: 'ACEITO'
             });
+
+            const precoId = precoRes.data.id;
+
+            // 2. Fazer upload dos anexos vinculados ao preço
+            for (const file of selectedFiles) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('entityType', 'PRECO');
+                formData.append('entityId', precoId.toString());
+                formData.append('descricao', file.name);
+
+                await api.post('/uploads', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+            }
+
+            // 3. Limpar formulário
             setValor('');
             setFonte('');
             setCnpj('');
+            setSelectedFiles([]);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+
+            addToast({ type: 'success', title: 'Sucesso', description: `Cotação adicionada com ${selectedFiles.length} anexo(s)!` });
             refresh();
-        } catch (err) {
-            alert('Erro ao adicionar preço');
+        } catch (err: any) {
+            console.error(err);
+            const errorMsg = err.response?.data?.error || err.message || 'Erro desconhecido';
+            addToast({ type: 'error', title: 'Erro', description: `Erro ao adicionar preço: ${errorMsg}` });
         }
     }
 
-    async function handleDelete(id: number) {
-        if (!confirm('Remover preço?')) return;
+    function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+        const files = Array.from(e.target.files || []);
+
+        // Validar tamanho (max 10MB cada)
+        const validFiles = files.filter(f => {
+            if (f.size > 10 * 1024 * 1024) {
+                addToast({ type: 'error', title: 'Arquivo muito grande', description: `${f.name} excede 10MB` });
+                return false;
+            }
+            return true;
+        });
+
+        // Limitar a 5 arquivos
+        if (selectedFiles.length + validFiles.length > 5) {
+            addToast({ type: 'error', title: 'Limite de arquivos', description: 'Máximo de 5 arquivos por preço.' });
+            return;
+        }
+
+        setSelectedFiles(prev => [...prev, ...validFiles]);
+    }
+
+    function removeFile(index: number) {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    }
+
+    async function loadAttachments(precoId: number) {
+        if (priceAttachments[precoId]) {
+            setExpandedPriceId(expandedPriceId === precoId ? null : precoId);
+            return;
+        }
         try {
-            await api.delete(`/precos/${id}`);
-            refresh();
-        } catch (err) {
-            alert('Erro ao remover');
+            const res = await api.get(`/uploads?entityType=PRECO&entityId=${precoId}`);
+            setPriceAttachments(prev => ({ ...prev, [precoId]: res.data }));
+            setExpandedPriceId(precoId);
+        } catch {
+            addToast({ type: 'error', title: 'Erro', description: 'Erro ao carregar anexos' });
         }
     }
 
-    const getBadgeColor = (status: string) => {
-        switch (status) {
-            case 'ACEITO': return 'bg-green-100 text-green-800';
-            case 'ACIMA_DO_LIMITE': return 'bg-red-100 text-red-800';
-            case 'ABAIXO_DO_LIMITE': return 'bg-yellow-100 text-yellow-800';
-            case 'INVALIDO_DATA': return 'bg-gray-100 text-gray-800';
-            default: return 'bg-gray-100 text-gray-800';
+    async function handleDelete() {
+        if (!deleteId) return;
+        setDeleting(true);
+        try {
+            await api.delete(`/precos/${deleteId}`);
+            addToast({ type: 'success', title: 'Sucesso', description: 'Preço removido com sucesso!' });
+            refresh();
+        } catch (err) {
+            addToast({ type: 'error', title: 'Erro', description: 'Erro ao remover preço' });
+        } finally {
+            setDeleting(false);
+            setDeleteId(null);
         }
-    };
+    }
+
+    if (loading) return <LoadingOverlay message="Carregando preços..." />;
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">
-            <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">Gerenciar Preços do Item</h1>
+            <div className="flex justify-between items-center">
+                <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">Gerenciar Preços do Item</h1>
+                <button
+                    onClick={() => navigate(-1)}
+                    className="text-primary hover:text-primary-light text-sm"
+                >
+                    ← Voltar para Demanda
+                </button>
+            </div>
 
-            {/* Stats Summary - Client Side Calc for Immediate Feedback if Item Endpoint not ready */}
-            {/* Ideally we fetch 'Item' object here. */}
-
+            {/* Prices Table */}
             <div className="bg-white dark:bg-zinc-800 shadow rounded-lg p-6">
                 <h2 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-100">Cotações Cadastradas</h2>
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-                    <thead>
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variação</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fonte</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-zinc-700">
-                        {prices.map(p => (
-                            <tr key={p.id}>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(p.valor_unitario))}
-                                </td>
-                                <td className="px-6 py-4 text-sm">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getBadgeColor(p.classificacao)}`}>
-                                        {p.classificacao.replace(/_/g, ' ')}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                    {p.percentual_variacao ? `${Number(p.percentual_variacao).toFixed(1)}%` : '-'}
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                    {p.fonte}
-                                    <span className="block text-xs text-gray-400">{new Date(p.data_coleta).toLocaleDateString()}</span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <button onClick={() => handleDelete(p.id)} className="text-red-500 hover:text-red-700 text-sm">Excluir</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                {prices.length === 0 ? (
+                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">Nenhuma cotação cadastrada.</p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
+                            <thead>
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Variação</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fonte</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Anexos</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 dark:divide-zinc-700">
+                                {prices.map(p => (
+                                    <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-zinc-700">
+                                        <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(p.valor_unitario))}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm">
+                                            <StatusBadge status={p.classificacao} />
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 hidden md:table-cell">
+                                            {p.percentual_variacao ? `${Number(p.percentual_variacao).toFixed(1)}%` : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                            {p.fonte}
+                                            <span className="block text-xs text-gray-400">{new Date(p.data_coleta).toLocaleDateString('pt-BR')}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm">
+                                            <button
+                                                onClick={() => loadAttachments(p.id)}
+                                                className="text-blue-500 hover:text-blue-700 text-sm flex items-center gap-1"
+                                            >
+                                                📎 {expandedPriceId === p.id ? 'Ocultar' : 'Ver'}
+                                            </button>
+                                            {expandedPriceId === p.id && (
+                                                <div className="mt-2">
+                                                    <AttachmentList entityType="PRECO" entityId={p.id} refreshTrigger={0} />
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button
+                                                onClick={() => setDeleteId(p.id)}
+                                                className="text-red-500 hover:text-red-700 text-sm"
+                                            >
+                                                Excluir
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
             {/* Add Form */}
@@ -183,34 +266,128 @@ export function PriceManager() {
                         <input
                             type="number" step="0.01" placeholder="0,00"
                             value={valor} onChange={e => setValor(e.target.value)}
-                            className="w-full px-3 py-2 border rounded dark:bg-zinc-700 dark:border-zinc-600 dark:text-white" required
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary" required
                         />
                     </div>
                     <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Fonte / Fornecedor</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Fornecedor (Cadastrado)</label>
+                        <FornecedorSelect
+                            value={fornecedorId}
+                            onChange={handleFornecedorChange}
+                        />
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Fonte / Fornecedor (Nome)</label>
                         <input
                             type="text" placeholder="Nome da Fonte"
                             value={fonte} onChange={e => setFonte(e.target.value)}
-                            className="w-full px-3 py-2 border rounded dark:bg-zinc-700 dark:border-zinc-600 dark:text-white" required
+                            // Readonly if supplier selected? Or allow override? Readonly behaves better for consistency.
+                            readOnly={!!fornecedorId}
+                            className={`w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary ${fornecedorId ? 'bg-gray-100 opacity-70 cursor-not-allowed' : ''}`} required
                         />
                     </div>
                     <div className="md:col-span-1">
                         <label className="block text-xs font-medium text-gray-500 mb-1">CNPJ</label>
-                        <input
-                            type="text" placeholder="CNPJ"
-                            value={cnpj} onChange={e => setCnpj(e.target.value)}
-                            className="w-full px-3 py-2 border rounded dark:bg-zinc-700 dark:border-zinc-600 dark:text-white"
-                        />
+                        <div className="relative">
+                            <input
+                                type="text" placeholder="00.000.000/0000-00"
+                                value={cnpj}
+                                onChange={e => {
+                                    if (fornecedorId) return; // Prevent edit if supplier selected
+                                    const value = e.target.value;
+                                    setCnpj(value);
+                                    if (cnpjError) setCnpjError('');
+                                }}
+                                onBlur={() => {
+                                    if (!fornecedorId && cnpj && cnpj.replace(/[^\d]/g, '').length > 0) {
+                                        if (!validateCNPJ(cnpj)) {
+                                            setCnpjError('CNPJ inválido');
+                                        } else {
+                                            setCnpjError('');
+                                            setCnpj(formatCNPJ(cnpj));
+                                        }
+                                    }
+                                }}
+                                readOnly={!!fornecedorId}
+                                className={`w-full px-3 py-2 border rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary ${cnpjError
+                                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                                    : cnpj && validateCNPJ(cnpj)
+                                        ? 'border-green-500'
+                                        : 'border-gray-300 dark:border-zinc-600'
+                                    } ${fornecedorId ? 'bg-gray-100 opacity-70 cursor-not-allowed' : ''}`}
+                            />
+                            {cnpj && (
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-lg">
+                                    {validateCNPJ(cnpj) ? '✅' : cnpj.replace(/[^\d]/g, '').length >= 14 ? '❌' : ''}
+                                </span>
+                            )}
+                        </div>
+                        {cnpjError && (
+                            <p className="text-red-500 text-xs mt-1">{cnpjError}</p>
+                        )}
+                    </div>
+                    <div className="md:col-span-4">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                            Anexos (Obrigatório) *
+                            <span className="text-gray-400 ml-2">PDF, JPG, PNG - Max 10MB cada, até 5 arquivos</span>
+                        </label>
+                        <div className="flex flex-wrap gap-2 items-center">
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileSelect}
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                multiple
+                                className="hidden"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="bg-gray-200 hover:bg-gray-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded inline-flex items-center text-sm"
+                            >
+                                📎 Selecionar Arquivos
+                            </button>
+                            {selectedFiles.length === 0 && (
+                                <span className="text-red-500 text-xs">⚠️ Adicione ao menos 1 evidência</span>
+                            )}
+                        </div>
+                        {selectedFiles.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {selectedFiles.map((file, index) => (
+                                    <div key={index} className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs flex items-center gap-2">
+                                        📄 {file.name}
+                                        <button
+                                            type="button"
+                                            onClick={() => removeFile(index)}
+                                            className="text-red-500 hover:text-red-700 font-bold"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <div className="md:col-span-4 flex justify-end mt-2">
-                        <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Adicionar e Calcular</button>
+                        <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors">
+                            Adicionar Cotação
+                        </button>
                     </div>
                 </form>
             </div>
 
-            <div className="flex justify-start">
-                <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-gray-700 text-sm underline">Voltar para Demanda</button>
-            </div>
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialog
+                isOpen={deleteId !== null}
+                title="Remover Cotação"
+                message="Tem certeza que deseja remover esta cotação? Esta ação não pode ser desfeita."
+                confirmText="Remover"
+                variant="danger"
+                loading={deleting}
+                onConfirm={handleDelete}
+                onCancel={() => setDeleteId(null)}
+            />
         </div>
     );
 }

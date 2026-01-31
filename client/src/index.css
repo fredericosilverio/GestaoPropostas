@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Habilitar dark mode baseado em classe */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Paleta de Cores - Design Premium */
   --color-primary: #1F4E78;
@@ -36,6 +39,16 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark mode overrides */
+.dark {
+  color-scheme: dark;
+  --color-surface: #18181b;
+  --color-background: #09090b;
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-border: #3f3f46;
 }
 
 body {

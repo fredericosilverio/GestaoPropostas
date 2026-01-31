@@ -18,10 +18,23 @@ export class PrecoController {
 
     async create(req: Request, res: Response) {
         try {
+            console.log('[PrecoController] Create Body:', JSON.stringify(req.body, null, 2));
             // @ts-ignore
             const userId = req.user.id;
             const preco = await precoService.create(req.body, userId);
             res.status(201).json(preco);
+        } catch (error: any) {
+            console.error('[PrecoController] Error:', error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async createBatch(req: Request, res: Response) {
+        try {
+            // @ts-ignore
+            const userId = req.user.id;
+            const result = await precoService.createBatch(req.body, userId);
+            res.status(201).json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }
@@ -30,7 +43,9 @@ export class PrecoController {
     async delete(req: Request, res: Response) {
         try {
             const id = Number(req.params.id);
-            await precoService.delete(id);
+            // @ts-ignore
+            const userId = req.user.id;
+            await precoService.delete(id, userId);
             res.status(204).send();
         } catch (error: any) {
             res.status(400).json({ error: error.message });

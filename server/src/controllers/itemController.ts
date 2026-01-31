@@ -18,7 +18,9 @@ export class ItemController {
 
     async create(req: Request, res: Response) {
         try {
-            const item = await itemService.create(req.body);
+            // @ts-ignore
+            const userId = req.user.id;
+            const item = await itemService.create(req.body, userId);
             res.status(201).json(item);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -28,7 +30,9 @@ export class ItemController {
     async update(req: Request, res: Response) {
         try {
             const id = Number(req.params.id);
-            const item = await itemService.update(id, req.body);
+            // @ts-ignore
+            const userId = req.user.id;
+            const item = await itemService.update(id, req.body, userId);
             res.json(item);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -38,7 +42,9 @@ export class ItemController {
     async delete(req: Request, res: Response) {
         try {
             const id = Number(req.params.id);
-            await itemService.delete(id);
+            // @ts-ignore
+            const userId = req.user.id;
+            await itemService.delete(id, userId);
             res.status(204).send();
         } catch (error: any) {
             res.status(400).json({ error: error.message });

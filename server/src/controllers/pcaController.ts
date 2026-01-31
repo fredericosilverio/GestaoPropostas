@@ -46,14 +46,82 @@ export class PcaController {
         }
     }
 
+    async delete(req: Request, res: Response) {
+        try {
+            const id = Number(req.params.id);
+            // @ts-ignore
+            const userId = req.user.id;
+            const { justificativa } = req.body;
+
+            const pca = await pcaService.delete(id, userId, justificativa);
+            res.json({ message: 'PCA excluído com sucesso', pca });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
     async changeStatus(req: Request, res: Response) {
         try {
             const id = Number(req.params.id);
-            const { situacao } = req.body;
-            const pca = await pcaService.changeStatus(id, situacao);
+            const { situacao, justificativa } = req.body;
+
+            if (!situacao) {
+                return res.status(400).json({ error: 'Situação é obrigatória' });
+            }
+
+            const pca = await pcaService.changeStatus(id, situacao, justificativa);
             res.json(pca);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }
     }
+
+    async createVersion(req: Request, res: Response) {
+        try {
+            const id = Number(req.params.id);
+            // @ts-ignore
+            const userId = req.user.id;
+            const { motivo } = req.body;
+
+            if (!motivo) {
+                return res.status(400).json({ error: 'Motivo da nova versão é obrigatório' });
+            }
+
+            const newPca = await pcaService.createNewVersion(id, motivo, userId);
+            res.status(201).json({
+                message: 'Nova versão criada com sucesso',
+                pca: newPca
+            });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getVersionHistory(req: Request, res: Response) {
+        try {
+            const id = Number(req.params.id);
+            const versions = await pcaService.getVersionHistory(id);
+            res.json(versions);
+        } catch (error: any) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getStatistics(req: Request, res: Response) {
+        try {
+            const filters = {
+                ano: req.query.ano ? Number(req.query.ano) : undefined,
+                situacao: req.query.situacao as string | undefined,
+                pcaId: req.query.pcaId ? Number(req.query.pcaId) : undefined
+            };
+            console.log('[PcaController] getStatistics called with filters:', filters);
+            const statistics = await pcaService.getStatistics(filters);
+            console.log('[PcaController] getStatistics result:', JSON.stringify(statistics));
+            res.json(statistics);
+        } catch (error: any) {
+            console.error('[PcaController] getStatistics error:', error.message);
+            res.status(500).json({ error: error.message });
+        }
+    }
 }
+

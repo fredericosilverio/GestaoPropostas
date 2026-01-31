@@ -1,24 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../contexts/ToastContext';
 
 interface PcaOption {
     id: number;
     ano: number;
     orgao: string;
+    versao: number;
 }
 
 export function DemandaForm() {
     const [pcaId, setPcaId] = useState('');
     const [pcas, setPcas] = useState<PcaOption[]>([]);
+
+    // Form Fields
     const [descricao, setDescricao] = useState('');
+    const [valorEstimado, setValorEstimado] = useState('');
     const [justificativaTecnica, setJustificativaTecnica] = useState('');
     const [justificativaAdministrativa, setJustificativaAdministrativa] = useState('');
     const [centroCusto, setCentroCusto] = useState('');
     const [prazoVigencia, setPrazoVigencia] = useState('');
     const [dataPrevista, setDataPrevista] = useState('');
 
-    // Default enums (should ideally come from backend or shared constant)
+    // Default enums
     const [tipoContratacao, setTipoContratacao] = useState('NOVA');
     const [naturezaDespesa, setNaturezaDespesa] = useState('CUSTEIO');
     const [elementoDespesa, setElementoDespesa] = useState('');
@@ -27,6 +32,7 @@ export function DemandaForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { addToast } = useToast();
 
     useEffect(() => {
         loadPcas();
@@ -39,8 +45,18 @@ export function DemandaForm() {
             setPcas(response.data);
         } catch (err) {
             console.error("Failed to load PCAs");
+            addToast({ type: 'error', title: 'Erro', description: 'Falha ao carregar PCAs' });
         }
     }
+
+    const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/\D/g, '');
+        const numberValue = Number(value) / 100;
+        setValorEstimado(new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(numberValue));
+    };
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -53,24 +69,44 @@ export function DemandaForm() {
             return;
         }
 
+        if (Number(prazoVigencia) <= 0) {
+            setError('Prazo de vigência deve ser maior que 0');
+            setLoading(false);
+            return;
+        }
+
+        if (new Date(dataPrevista) < new Date()) {
+            setError('A data prevista deve ser futura.');
+            setLoading(false);
+            return;
+        }
+
+        // Convert formatted currency string back to number
+        const valorNumerico = valorEstimado
+            ? Number(valorEstimado.replace(/[^0-9,-]+/g, "").replace(",", "."))
+            : null;
+
         try {
             await api.post('/demandas', {
                 pca_id: Number(pcaId),
                 descricao,
+                valor_estimado_global: valorNumerico,
                 justificativa_tecnica: justificativaTecnica,
                 justificativa_administrativa: justificativaAdministrativa,
                 centro_custo: centroCusto,
                 prazo_vigencia_meses: Number(prazoVigencia),
-                data_prevista_contratacao: new Date(dataPrevista), // ISO String conversion handled by axios/backend?
-                // Backend expects DateTime. JSON.stringify usually keeps ISO.
+                data_prevista_contratacao: new Date(dataPrevista),
                 tipo_contratacao: tipoContratacao,
                 natureza_despesa: naturezaDespesa,
                 elemento_despesa: elementoDespesa,
                 unidade_demandante: unidadeDemandante
             });
+            addToast({ type: 'success', title: 'Sucesso', description: 'Demanda criada com sucesso!' });
             navigate('/demandas');
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao criar Demanda');
+            const msg = err.response?.data?.error || 'Erro ao criar Demanda';
+            setError(msg);
+            addToast({ type: 'error', title: 'Erro', description: msg });
         } finally {
             setLoading(false);
         }
@@ -88,7 +124,7 @@ export function DemandaForm() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
+                    <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">PCA Vinculado (Ano/Órgão)</label>
                         <select
                             value={pcaId}
@@ -98,7 +134,9 @@ export function DemandaForm() {
                         >
                             <option value="">Selecione...</option>
                             {pcas.map(pca => (
-                                <option key={pca.id} value={pca.id}>{pca.ano} - {pca.orgao}</option>
+                                <option key={pca.id} value={pca.id}>
+                                    {pca.ano} - {pca.orgao} (v{pca.versao})
+                                </option>
                             ))}
                         </select>
                     </div>
@@ -111,6 +149,17 @@ export function DemandaForm() {
                             onChange={e => setUnidadeDemandante(e.target.value)}
                             className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
                             required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Valor Estimado Global (R$)</label>
+                        <input
+                            type="text"
+                            value={valorEstimado}
+                            onChange={handleValorChange}
+                            placeholder="R$ 0,00"
+                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
                         />
                     </div>
 

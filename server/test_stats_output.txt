@@ -1,0 +1,26 @@
+1. Fazendo login...
+Token obtido: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZ...
+
+2. Buscando estat├¡sticas...
+Erro: {
+  error: '\n' +
+    'Invalid `prisma.pca.findUnique()` invocation:\n' +
+    '\n' +
+    '{\n' +
+    '  where: {\n' +
+    '+   id: Int\n' +
+    '  },\n' +
+    '  include: {\n' +
+    '    responsavel: {\n' +
+    '      select: {\n' +
+    '        id: true,\n' +
+    '        nome_completo: true,\n' +
+    '        email: true\n' +
+    '      }\n' +
+    '    },\n' +
+    '    demandas: true\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'Argument `id` is missing.'
+}

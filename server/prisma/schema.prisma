@@ -35,34 +35,65 @@ model Usuario {
   updated_at           DateTime  @updatedAt
 
   // Relations
-  pcas_responsavel     Pca[]
-  demandas_responsavel Demanda[]     @relation("Responsavel")
-  demandas_ajustadas   Demanda[]     @relation("AjustadoPor")
-  itens_ajustados      Item[]        @relation("ItemAjustadoPor")
-  precos_aprovados     Preco[]       @relation("PrecoAprovadoPor")
-  precos_cadastrados   Preco[]       @relation("PrecoCadastradoPor")
-  anexos_upload        Anexo[]
-  logs                 HistoricoLog[]
+  pcas_responsavel       Pca[]     @relation("ResponsavelPca")
+  pcas_consolidador      Pca[]     @relation("ConsolidadorPca")
+  demandas_responsavel   Demanda[]     @relation("Responsavel")
+  demandas_ajustadas     Demanda[]     @relation("AjustadoPor")
+  itens_ajustados        Item[]        @relation("ItemAjustadoPor")
+  precos_aprovados       Preco[]       @relation("PrecoAprovadoPor")
+  precos_cadastrados     Preco[]       @relation("PrecoCadastradoPor")
+  anexos_upload          Anexo[]
+  logs                   HistoricoLog[]
 
   @@map("usuario")
 }
 
 model Pca {
   id               Int         @id @default(autoincrement())
+  
+  // === Dados Gerais do Plano ===
   ano              Int
-  numero_pca       String
-  orgao            String
-  situacao         String      @default("EM_ELABORACAO") // Enum: SituacaoPCA
-  data_criacao     DateTime    @default(now())
-  data_aprovacao   DateTime?
-  responsavel_id   Int
-  responsavel      Usuario     @relation(fields: [responsavel_id], references: [id])
-  observacoes      String?
-  versao           Int         @default(1)
+  numero_pca       String                          // Código/Identificador único
+  denominacao      String?                         // Ex: "PAC 2026 – DTI"
+  
+  // === Vinculação Institucional ===
+  orgao            String                          // Órgão/Entidade
+  unidade_demandante   String?                     // Diretoria/Secretaria responsável
+  area_tecnica         String?                     // Área de suporte técnico
+  
+  // === Responsáveis ===
+  responsavel_id               Int                 // Responsável pela elaboração
+  responsavel                  Usuario     @relation("ResponsavelPca", fields: [responsavel_id], references: [id])
+  responsavel_consolidacao_id  Int?                // Responsável pela consolidação/gestão
+  responsavel_consolidacao     Usuario?    @relation("ConsolidadorPca", fields: [responsavel_consolidacao_id], references: [id])
+  contato_email                String?             // E-mail institucional
+  contato_telefone             String?             // Telefone funcional
+  
+  // === Datas e Versionamento ===
+  data_criacao     DateTime    @default(now())     // Data de elaboração inicial
+  versao           Int         @default(1)         // Número da versão
   versao_anterior_id Int?
   versao_anterior  Pca?        @relation("VersaoPca", fields: [versao_anterior_id], references: [id])
   proximas_versoes Pca[]       @relation("VersaoPca")
-  motivo_versao    String?
+  motivo_versao    String?                         // Motivo da criação desta versão
+  historico_alteracoes String?                     // Resumo das modificações
+  
+  // === Situação e Ciclo de Vida ===
+  situacao         String      @default("EM_ELABORACAO") // Enum: SituacaoPCA
+  periodo_vigencia_inicio DateTime?               // Início do período de vigência
+  periodo_vigencia_fim    DateTime?               // Fim do período de vigência
+  
+  // === Aprovação Institucional ===
+  data_aprovacao           DateTime?              // Data da aprovação
+  autoridade_aprovadora    String?                // Nome da autoridade aprovadora
+  cargo_autoridade         String?                // Cargo/Função da autoridade
+  forma_aprovacao          String?                // Despacho, Portaria, Deliberação, etc.
+  documento_aprovacao      String?                // Número do documento (SEI, PROAD, etc.)
+  
+  // === Observações ===
+  observacoes      String?                         // Campo livre para informações adicionais
+  
+  // === Controle ===
   ativo            Boolean     @default(true)
   created_at       DateTime    @default(now())
   updated_at       DateTime    @updatedAt
@@ -165,6 +196,12 @@ model Preco {
   valor_unitario       Decimal
   data_coleta          DateTime
   unidade_medida       String
+  
+  // Relacionamento com Fornecedor (Novo)
+  fornecedor_id        Int?
+  fornecedor           Fornecedor?        @relation(fields: [fornecedor_id], references: [id])
+
+  // Campos legados (manter opcionais)
   cnpj_fornecedor      String?
   razao_social         String?
   cidade_uf            String?
@@ -211,6 +248,36 @@ model Anexo {
   @@map("anexo")
 }
 
+model Fornecedor {
+  id              Int      @id @default(autoincrement())
+  razao_social    String
+  nome_fantasia   String?
+  cnpj            String   @unique
+  
+  // Endereço
+  logradouro      String?
+  numero          String?
+  complemento     String?
+  bairro          String?
+  cidade          String?
+  uf              String?
+  cep             String?
+  
+  // Contato
+  responsavel_legal String?
+  email_contato     String?
+  telefone_contato  String?
+  
+  ativo           Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  precos          Preco[]
+
+  @@map("fornecedor")
+}
+
 model HistoricoLog {
   id             BigInt       @id @default(autoincrement())
   usuario_id     Int?
@@ -242,4 +309,34 @@ model Configuracao {
   updated_at  DateTime @updatedAt
 
   @@map("configuracao")
+}
+
+// Catálogo de Itens Reutilizáveis
+model ItemCatalogo {
+  id                      Int      @id @default(autoincrement())
+  codigo                  String   @unique
+  descricao               String
+  especificacoes_tecnicas String?
+  unidade_medida          String
+  codigo_catmat           String?
+  categoria               String?
+  preco_referencia        Decimal?
+  data_atualizacao_preco  DateTime?
+  ativo                   Boolean  @default(true)
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  @@map("item_catalogo")
+}
+
+// Comentários nas Demandas
+model Comentario {
+  id         Int      @id @default(autoincrement())
+  demanda_id Int
+  usuario_id Int
+  texto      String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("comentario")
 }

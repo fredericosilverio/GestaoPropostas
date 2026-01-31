@@ -39,8 +39,8 @@ export class ReportService {
                 precos: item.precos, // Already sorted
                 estatisticas: stats,
                 // Ensure latest classification is used or re-calculate if needed
-                // (Assuming ItemService updates DB, we just use what's there or re-calc stats)
-                valor_estimado_final: item.valor_estimado_total
+                valor_estimado_final: item.valor_estimado_total,
+                descricao_detalhada: `${item.descricao}${item.especificacoes_tecnicas ? ' - ' + item.especificacoes_tecnicas : ''}`
             };
         });
 

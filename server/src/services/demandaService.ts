@@ -1,6 +1,9 @@
 import { PrismaClient } from '@prisma/client';
+import { AuditService } from './AuditService';
+import { emailService } from './emailService';
 
 const prisma = new PrismaClient();
+const auditService = new AuditService();
 
 export class DemandaService {
     async list(filters?: any) {
@@ -35,24 +38,41 @@ export class DemandaService {
     }
 
     async create(data: any, userId: number) {
-        // Generate unique code: D-{YEAR}-{RANDOM}
-        const year = new Date().getFullYear();
-        const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-        const codigo_demanda = `D-${year}-${random}`;
-
         // Ensure PCA exists
         const pca = await prisma.pca.findUnique({ where: { id: data.pca_id } });
         if (!pca) throw new Error('PCA não encontrado');
 
-        return prisma.demanda.create({
+        // Get next sequential project number for this PCA
+        const lastDemanda = await prisma.demanda.findFirst({
+            where: { pca_id: data.pca_id },
+            orderBy: { numero_projeto: 'desc' }
+        });
+        const numero_projeto = lastDemanda ? lastDemanda.numero_projeto + 1 : 1;
+
+        // Generate sequential code: PCA{ANO}-{NUM_PCA}-{NUM_PROJETO}
+        const numPca = pca.numero_pca.padStart(3, '0');
+        const numProjeto = String(numero_projeto).padStart(3, '0');
+        const codigo_demanda = `PCA${pca.ano}-${numPca}-${numProjeto}`;
+
+        const createdDemanda = await prisma.demanda.create({
             data: {
                 ...data,
                 codigo_demanda,
-                numero_projeto: Math.floor(Math.random() * 1000), // Should be sequential but random for now
+                numero_projeto,
                 responsavel_id: userId,
                 status: 'CADASTRADA'
             }
         });
+
+        await auditService.log({
+            usuario_id: userId,
+            acao: 'CRIACAO',
+            entidade_tipo: 'DEMANDA',
+            entidade_id: createdDemanda.id,
+            descricao: `Demanda ${codigo_demanda} criada.`
+        });
+
+        return createdDemanda;
     }
 
     async update(id: number, data: any) {
@@ -70,7 +90,7 @@ export class DemandaService {
             throw new Error('A apenas demandas ESTIMADAS podem ir para contratação.');
         }
 
-        return prisma.demanda.update({
+        const updated = await prisma.demanda.update({
             where: { id },
             data: {
                 status: 'EM_CONTRATACAO',
@@ -79,6 +99,18 @@ export class DemandaService {
                 ajustado_em: new Date()
             }
         });
+
+        await auditService.log({
+            usuario_id: userId,
+            acao: 'TRANSICAO_STATUS',
+            entidade_tipo: 'DEMANDA',
+            entidade_id: id,
+            valor_anterior: 'ESTIMADA',
+            valor_novo: 'EM_CONTRATACAO',
+            descricao: `Início de contratação. Processo: ${numeroProcesso}`
+        });
+
+        return updated;
     }
 
     async finalizeContract(id: number, contractData: any, userId: number) {
@@ -89,7 +121,7 @@ export class DemandaService {
             throw new Error('A demanda deve estar EM_CONTRATACAO para ser finalizada.');
         }
 
-        return prisma.demanda.update({
+        const updated = await prisma.demanda.update({
             where: { id },
             data: {
                 status: 'CONTRATADA',
@@ -102,6 +134,18 @@ export class DemandaService {
                 ajustado_em: new Date()
             }
         });
+
+        await auditService.log({
+            usuario_id: userId,
+            acao: 'TRANSICAO_STATUS',
+            entidade_tipo: 'DEMANDA',
+            entidade_id: id,
+            valor_anterior: 'EM_CONTRATACAO',
+            valor_novo: 'CONTRATADA',
+            descricao: `Contrato finalizado. Nº ${contractData.numero_contrato}`
+        });
+
+        return updated;
     }
 
     async changeStatus(id: number, newStatus: string, userId: number, justificativa?: string) {
@@ -130,6 +174,18 @@ export class DemandaService {
         }
 
         // Log transition could be added here (HistoricoLog) in future
+        await auditService.log({
+            usuario_id: userId,
+            acao: 'TRANSICAO_STATUS',
+            entidade_tipo: 'DEMANDA',
+            entidade_id: id,
+            valor_anterior: demanda.status,
+            valor_novo: newStatus,
+            descricao: justificativa
+        });
+
+        // Enviar notificação por e-mail
+        emailService.notifyStatusChange(id, demanda.status, newStatus);
 
         return prisma.demanda.update({
             where: { id },
