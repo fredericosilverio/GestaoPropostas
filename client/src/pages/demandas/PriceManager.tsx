@@ -32,6 +32,7 @@ export function PriceManager() {
     const [fonte, setFonte] = useState('');
     const [cnpj, setCnpj] = useState('');
     const [cnpjError, setCnpjError] = useState('');
+    const [linkFonte, setLinkFonte] = useState('');
     const [tipoFonte, setTipoFonte] = useState<TipoFonte>('COTACAO_FORNECEDOR');
     const [dataColeta, setDataColeta] = useState(new Date().toISOString().split('T')[0]);
 
@@ -40,6 +41,7 @@ export function PriceManager() {
     const [editValor, setEditValor] = useState('');
     const [editFonte, setEditFonte] = useState('');
     const [editTipoFonte, setEditTipoFonte] = useState<TipoFonte>('COTACAO_FORNECEDOR');
+    const [editLinkFonte, setEditLinkFonte] = useState('');
     const [editDataColeta, setEditDataColeta] = useState('');
     const [saving, setSaving] = useState(false);
 
@@ -94,12 +96,6 @@ export function PriceManager() {
     async function handleAddPrice(e: React.FormEvent) {
         e.preventDefault();
 
-        // Validar anexo obrigatório
-        if (selectedFiles.length === 0) {
-            addToast({ type: 'error', title: 'Anexo Obrigatório', description: 'É necessário anexar ao menos 1 evidência (orçamento, print, proposta).' });
-            return;
-        }
-
         try {
             // 1. Criar o preço
             const precoRes = await api.post('/precos', {
@@ -109,6 +105,7 @@ export function PriceManager() {
                 cnpj_fornecedor: cnpj,
                 fornecedor_id: fornecedorId,
                 tipo_fonte: tipoFonte,
+                link_fonte: linkFonte || null,
                 unidade_medida: 'UN',
                 data_coleta: dataColeta,
                 classificacao: 'ACEITO'
@@ -134,6 +131,7 @@ export function PriceManager() {
             setFonte('');
             setCnpj('');
             setFornecedorId(null);
+            setLinkFonte('');
             setTipoFonte('COTACAO_FORNECEDOR');
             setDataColeta(new Date().toISOString().split('T')[0]);
             setSelectedFiles([]);
@@ -208,6 +206,7 @@ export function PriceManager() {
         setEditValor(String(price.valor_unitario));
         setEditFonte(price.fonte);
         setEditTipoFonte(price.tipo_fonte);
+        setEditLinkFonte(price.link_fonte || '');
         setEditDataColeta(new Date(price.data_coleta).toISOString().split('T')[0]);
     }
 
@@ -219,6 +218,7 @@ export function PriceManager() {
                 valor_unitario: Number(editValor),
                 fonte: editFonte,
                 tipo_fonte: editTipoFonte,
+                link_fonte: editLinkFonte || null,
                 data_coleta: editDataColeta
             });
             addToast({ type: 'success', title: 'Sucesso', description: 'Preço atualizado com sucesso!' });
@@ -408,9 +408,17 @@ export function PriceManager() {
                             <p className="text-red-500 text-xs mt-1">{cnpjError}</p>
                         )}
                     </div>
-                    <div className="md:col-span-4">
+                    <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Link do Edital / Fonte Pública</label>
+                        <input
+                            type="url" placeholder="https://exemplo.gov.br/edital/123"
+                            value={linkFonte} onChange={e => setLinkFonte(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary"
+                        />
+                    </div>
+                    <div className="md:col-span-2">
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                            Anexos (Obrigatório) *
+                            Anexos (Opcional)
                             <span className="text-gray-400 ml-2">PDF, JPG, PNG - Max 10MB cada, até 5 arquivos</span>
                         </label>
                         <div className="flex flex-wrap gap-2 items-center">
@@ -430,7 +438,7 @@ export function PriceManager() {
                                 📎 Selecionar Arquivos
                             </button>
                             {selectedFiles.length === 0 && (
-                                <span className="text-red-500 text-xs">⚠️ Adicione ao menos 1 evidência</span>
+                                <span className="text-gray-400 text-xs">Nenhum arquivo selecionado</span>
                             )}
                         </div>
                         {selectedFiles.length > 0 && (
@@ -502,6 +510,14 @@ export function PriceManager() {
                                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                                     ))}
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Link do Edital</label>
+                                <input
+                                    type="url"
+                                    value={editLinkFonte} onChange={e => setEditLinkFonte(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white"
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data da Coleta</label>

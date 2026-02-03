@@ -22,7 +22,7 @@ export class MarketAnalysisReportService {
         };
     }
 
-    async generateMarketAnalysisReport(demandaId: number): Promise<Buffer> {
+    async generateMarketAnalysisReport(demandaId: number, filterType: 'all' | 'median25' = 'all'): Promise<Buffer> {
         // Fetch Demanda with all relations
         const demanda = await prisma.demanda.findUnique({
             where: { id: demandaId },
@@ -45,10 +45,23 @@ export class MarketAnalysisReportService {
             throw new Error('Demanda não encontrada');
         }
 
-        // Calculate statistics for each item
+        // Calculate statistics for each item, optionally filtering prices for calculations
         const itensComEstatisticas = demanda.itens.map(item => {
-            const stats = marketAnalysisService.calculateStatistics(item.precos);
-            return { ...item, estatisticas: stats };
+            let precosParaCalculo = item.precos;
+
+            // If median25 filter is selected, only use prices classified as 'ACEITO' for calculations
+            if (filterType === 'median25') {
+                precosParaCalculo = item.precos.filter((p: any) => p.classificacao === 'ACEITO');
+            }
+
+            const stats = marketAnalysisService.calculateStatistics(precosParaCalculo);
+            return {
+                ...item,
+                precos: item.precos, // Always show ALL prices in the table
+                precosParaCalculo: precosParaCalculo, // Filtered prices used for statistics
+                estatisticas: stats,
+                filterApplied: filterType
+            };
         });
 
         // Load logo as base64 if exists
@@ -103,6 +116,18 @@ export class MarketAnalysisReportService {
             ? `<img src="${logoBase64}" alt="Logo" style="width: 50px; height: auto; margin-bottom: 8pt;"/>`
             : '';
 
+        // Reference helper
+        const references: string[] = [];
+        const getRefIndex = (link: string | null) => {
+            if (!link) return null;
+            let idx = references.indexOf(link);
+            if (idx === -1) {
+                references.push(link);
+                idx = references.length - 1;
+            }
+            return idx + 1;
+        };
+
         return `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -125,7 +150,6 @@ export class MarketAnalysisReportService {
         .header-section {
             text-align: center;
             margin-bottom: 15pt;
-            border-bottom: 1.5px solid #1e3a5f;
             padding-bottom: 8pt;
         }
         
@@ -145,10 +169,10 @@ export class MarketAnalysisReportService {
         }
         
         .report-title {
-            font-size: 12pt;
+            font-size: 14pt;
             font-weight: bold;
             color: #1e3a5f;
-            margin-top: 10pt;
+            margin-top: 15pt;
             text-align: center;
             text-transform: uppercase;
         }
@@ -467,7 +491,7 @@ export class MarketAnalysisReportService {
                 <tfoot>
                     <tr style="background: #1e3a5f; color: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact;">
                         <td colspan="5" style="text-align: right; font-weight: bold; padding: 6pt 8pt; border: none;">VALOR TOTAL ESTIMADO:</td>
-                        <td class="currency" style="text-align: right; font-weight: bold; font-size: 11pt; padding: 6pt 8pt; border: none;">R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td class="currency" style="text-align: right; font-weight: bold; font-size: 11pt; padding: 6pt 8pt; border: none; white-space: nowrap;">R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                 </tfoot>
             </table>
@@ -504,7 +528,7 @@ export class MarketAnalysisReportService {
                     <tbody>
                         ${item.precos.map((p: any) => `
                         <tr class="${p.classificacao === 'ACEITO' ? 'price-aceito' : p.classificacao === 'ACIMA_DO_LIMITE' ? 'price-acima' : 'price-abaixo'}">
-                            <td>${p.fonte}</td>
+                            <td>${p.fonte}${p.link_fonte ? ` <sup style="color: #1e3a5f; font-weight: bold;">[${getRefIndex(p.link_fonte)}]</sup>` : ''}</td>
                             <td>${(p.tipo_fonte || '').replace(/_/g, ' ')}</td>
                             <td>${new Date(p.data_coleta).toLocaleDateString('pt-BR')}</td>
                             <td class="currency">R$ ${Number(p.valor_unitario).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -546,6 +570,20 @@ export class MarketAnalysisReportService {
         ` : ''}
 
         
+        <!-- 6. REFERÊNCIAS -->
+        ${references.length > 0 ? `
+        <div class="section">
+            <h3 class="section-title">6. Referências</h3>
+            <ol style="font-size: 9pt; padding-left: 15px;">
+                ${references.map(link => `
+                <li style="margin-bottom: 3pt;">
+                    <a href="${link}" target="_blank" style="color: #1e3a5f; text-decoration: none;">${link}</a>
+                </li>
+                `).join('')}
+            </ol>
+        </div>
+        ` : ''}
+
         <!-- DATA ASSINATURA -->
         <div style="text-align: right; margin-top: 40px; margin-bottom: 20px; font-size: 11pt; color: #1a1a1a;">
             Goiânia, ${dateFull}.

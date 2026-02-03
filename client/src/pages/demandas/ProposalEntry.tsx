@@ -37,6 +37,7 @@ export function ProposalEntry() {
     const [fornecedorId, setFornecedorId] = useState<number | null>(null);
     const [dataProposta, setDataProposta] = useState(new Date().toISOString().split('T')[0]);
     const [tipoFonte, setTipoFonte] = useState<TipoFonte>('COTACAO_FORNECEDOR');
+    const [linkFonte, setLinkFonte] = useState('');
 
     // File upload state
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -112,12 +113,6 @@ export function ProposalEntry() {
             return;
         }
 
-        // Validar anexo obrigatório
-        if (selectedFiles.length === 0) {
-            addToast({ type: 'error', title: 'Anexo Obrigatório', description: 'É necessário anexar ao menos 1 evidência (proposta, orçamento, print).' });
-            return;
-        }
-
         const itemsToSave = items
             .filter(item => item.valor_unitario && parseFloat(item.valor_unitario) > 0)
             .map(item => ({
@@ -137,6 +132,7 @@ export function ProposalEntry() {
                 fornecedor_id: fornecedorId,
                 data_coleta: dataProposta,
                 tipo_fonte: tipoFonte,
+                link_fonte: linkFonte || null,
                 itens: itemsToSave
             });
 
@@ -238,10 +234,24 @@ export function ProposalEntry() {
                     </div>
                 </div>
 
+                {/* Link do Edital */}
+                <div className="pt-4 border-t border-gray-200 dark:border-zinc-700">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        🔗 Link do Edital / Fonte Pública
+                    </label>
+                    <input
+                        type="url"
+                        placeholder="https://exemplo.gov.br/edital/123"
+                        value={linkFonte}
+                        onChange={e => setLinkFonte(e.target.value)}
+                        className="w-full md:w-1/2 px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md"
+                    />
+                </div>
+
                 {/* Evidence Upload */}
                 <div className="pt-4 border-t border-gray-200 dark:border-zinc-700">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        📎 Anexos de Evidência (Obrigatório) *
+                        📎 Anexos de Evidência (Opcional)
                         <span className="text-gray-400 ml-2 font-normal">PDF, JPG, PNG - Max 10MB cada, até 5 arquivos</span>
                     </label>
                     <div className="flex flex-wrap gap-2 items-center">

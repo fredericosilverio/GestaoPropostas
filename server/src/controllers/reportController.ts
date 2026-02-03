@@ -22,7 +22,11 @@ export class ReportController {
         try {
             console.log('!!! DOWNLOAD PDF V3 CALLED !!!');
             const id = Number(req.params.id);
-            const pdfBuffer = await pdfService.generateMarketAnalysisReport(id);
+            const filterType = (req.query.filterType as string) || 'all';
+
+            console.log(`PDF Generation - ID: ${id}, Filter: ${filterType}`);
+
+            const pdfBuffer = await pdfService.generateMarketAnalysisReport(id, filterType as 'all' | 'median25');
 
             res.setHeader('X-Report-Version', 'v3-market-analysis');
 

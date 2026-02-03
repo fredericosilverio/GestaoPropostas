@@ -154,6 +154,7 @@ export interface Preco {
     unidade_medida: string;
     data_coleta: string;
     tipo_fonte: TipoFonte;
+    link_fonte?: string;
 }
 
 // ===== Dashboard =====

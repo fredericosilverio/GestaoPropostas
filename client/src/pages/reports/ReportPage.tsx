@@ -2,8 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { ReportOptionsModal } from '../../components/ReportOptionsModal';
 import type { MarketAnalysisReport } from '../../types/api';
 
 export function ReportPage() {
@@ -12,6 +11,8 @@ export function ReportPage() {
     const [report, setReport] = useState<MarketAnalysisReport | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+    const [isPdfLoading, setIsPdfLoading] = useState(false);
     const printRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -28,9 +29,10 @@ export function ReportPage() {
         window.print();
     };
 
-    const handleExportPDF = async () => {
+    const handleExportPDF = async (filterType: 'all' | 'median25') => {
         try {
-            const response = await api.get(`/reports/market-analysis/${id}/pdf`, {
+            setIsPdfLoading(true);
+            const response = await api.get(`/reports/market-analysis/${id}/pdf?filterType=${filterType}`, {
                 responseType: 'blob'
             });
 
@@ -50,9 +52,12 @@ export function ReportPage() {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
+            setIsOptionsModalOpen(false);
         } catch (error) {
             console.error('Erro ao baixar PDF', error);
             alert('Erro ao gerar PDF. Verifique se o servidor está rodando.');
+        } finally {
+            setIsPdfLoading(false);
         }
     };
 
@@ -104,7 +109,7 @@ export function ReportPage() {
                     <button onClick={handlePrint} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                         Imprimir
                     </button>
-                    <button onClick={handleExportPDF} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    <button onClick={() => setIsOptionsModalOpen(true)} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
                         PDF (Gerado)
                     </button>
                     <button onClick={handleExportExcel} className="bg-green-800 text-white px-4 py-2 rounded hover:bg-green-900 border border-green-700">
@@ -261,6 +266,13 @@ export function ReportPage() {
                     }
                 `}
             </style>
-        </div >
+
+            <ReportOptionsModal
+                isOpen={isOptionsModalOpen}
+                onClose={() => setIsOptionsModalOpen(false)}
+                onGenerate={handleExportPDF}
+                isLoading={isPdfLoading}
+            />
+        </div>
     );
 }

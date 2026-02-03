@@ -28,6 +28,7 @@ export class PrecoService {
             fonte: data.fonte,
             cnpj_fornecedor: data.cnpj_fornecedor,
             tipo_fonte: data.tipo_fonte || 'COTACAO_FORNECEDOR',
+            link_fonte: data.link_fonte || null,
             unidade_medida: data.unidade_medida,
             data_coleta: data.data_coleta ? new Date(data.data_coleta) : new Date(),
             classificacao: 'ACEITO',
@@ -75,6 +76,7 @@ export class PrecoService {
         if (data.valor_unitario !== undefined) updateData.valor_unitario = Number(data.valor_unitario);
         if (data.fonte !== undefined) updateData.fonte = data.fonte;
         if (data.tipo_fonte !== undefined) updateData.tipo_fonte = data.tipo_fonte;
+        if (data.link_fonte !== undefined) updateData.link_fonte = data.link_fonte;
         if (data.data_coleta !== undefined) updateData.data_coleta = new Date(data.data_coleta);
         if (data.cnpj_fornecedor !== undefined) updateData.cnpj_fornecedor = data.cnpj_fornecedor;
 
@@ -100,6 +102,7 @@ export class PrecoService {
         fornecedor_id: number,
         data_coleta: Date,
         tipo_fonte?: string,
+        link_fonte?: string,
         itens: { item_id: number, valor_unitario: number }[]
     }, userId: number) {
         const fornecedor = await prisma.fornecedor.findUnique({ where: { id: data.fornecedor_id } });
@@ -124,6 +127,7 @@ export class PrecoService {
                         fonte: fornecedor.nome_fantasia || fornecedor.razao_social,
                         data_coleta: new Date(data.data_coleta),
                         tipo_fonte: tipoFonte,
+                        link_fonte: data.link_fonte || null,
                         unidade_medida: 'UN',
                         classificacao: 'ACEITO',
                         cadastrado_por_id: userId,
