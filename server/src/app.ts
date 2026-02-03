@@ -90,6 +90,7 @@ app.get('/debug-info', async (req, res) => {
 });
 
 app.listen(port, () => {
+    console.log(`!!! VERIFICACAO DE VERSAO - V2 !!!`);
     console.log(`Server is running at http://localhost:${port}`);
     console.log('Registered routes:');
     console.log('  - /auth, /users, /pcas, /demandas, /itens, /precos');

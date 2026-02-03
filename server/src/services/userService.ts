@@ -28,13 +28,15 @@ export class UserService {
     }
 
     async create(data: any) {
-        const existing = await prisma.usuario.findUnique({
-            where: { email: data.email },
-        });
+        // Validate Uniqueness
+        const existingEmail = await prisma.usuario.findUnique({ where: { email: data.email } });
+        if (existingEmail) throw new Error('Email já cadastrado');
 
-        if (existing) {
-            throw new Error('Email já cadastrado');
-        }
+        const existingCpf = await prisma.usuario.findUnique({ where: { cpf: data.cpf } });
+        if (existingCpf) throw new Error('CPF já cadastrado');
+
+        const existingMatricula = await prisma.usuario.findUnique({ where: { matricula: data.matricula } });
+        if (existingMatricula) throw new Error('Matrícula já cadastrada');
 
         const hashedPassword = await bcrypt.hash(data.senha || 'mudar123', 10);
 
@@ -42,7 +44,7 @@ export class UserService {
             data: {
                 ...data,
                 senha_hash: hashedPassword,
-                senha: undefined, // remove raw password
+                senha: undefined,
             },
         });
 
@@ -51,6 +53,28 @@ export class UserService {
     }
 
     async update(id: number, data: any) {
+        // Validation Checks for Update
+        if (data.email) {
+            const existing = await prisma.usuario.findFirst({
+                where: { email: data.email, NOT: { id } }
+            });
+            if (existing) throw new Error('Email já está em uso por outro usuário');
+        }
+
+        if (data.cpf) {
+            const existing = await prisma.usuario.findFirst({
+                where: { cpf: data.cpf, NOT: { id } }
+            });
+            if (existing) throw new Error('CPF já cadastrado para outro usuário');
+        }
+
+        if (data.matricula) {
+            const existing = await prisma.usuario.findFirst({
+                where: { matricula: data.matricula, NOT: { id } }
+            });
+            if (existing) throw new Error('Matrícula já cadastrada para outro usuário');
+        }
+
         // Se houver senha para atualizar
         if (data.senha) {
             data.senha_hash = await bcrypt.hash(data.senha, 10);

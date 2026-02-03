@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import { ReportService } from '../services/reportService';
 import { ExportService } from '../services/exportService';
-import { PdfService } from '../services/pdfService';
+import { MarketAnalysisReportService } from '../services/marketAnalysisReportService';
 
 const reportService = new ReportService();
 const exportService = new ExportService();
-const pdfService = new PdfService();
+const pdfService = new MarketAnalysisReportService();
 
 export class ReportController {
     async getMarketAnalysis(req: Request, res: Response) {
@@ -20,11 +20,22 @@ export class ReportController {
 
     async downloadPdf(req: Request, res: Response) {
         try {
+            console.log('!!! DOWNLOAD PDF V3 CALLED !!!');
             const id = Number(req.params.id);
             const pdfBuffer = await pdfService.generateMarketAnalysisReport(id);
 
+            res.setHeader('X-Report-Version', 'v3-market-analysis');
+
             res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename=relatorio_analise_${id}.pdf`);
+            const now = new Date();
+            const timestamp = now.getFullYear().toString() +
+                (now.getMonth() + 1).toString().padStart(2, '0') +
+                now.getDate().toString().padStart(2, '0') + "_" +
+                now.getHours().toString().padStart(2, '0') +
+                now.getMinutes().toString().padStart(2, '0') +
+                now.getSeconds().toString().padStart(2, '0');
+
+            res.setHeader('Content-Disposition', `attachment; filename=relatorio_analise_${id}_${timestamp}.pdf`);
             res.send(pdfBuffer);
         } catch (error: any) {
             console.error('PDF Export Error:', error);

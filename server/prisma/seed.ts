@@ -4,31 +4,43 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-    const adminEmail = 'admin@gestaopropostas.gov.br';
-    const existingAdmin = await prisma.usuario.findUnique({
-        where: { email: adminEmail },
-    });
-
-    if (existingAdmin) {
-        console.log('Admin user already exists.');
-        return;
-    }
-
     const hashedPassword = await bcrypt.hash('admin123', 10);
 
-    const admin = await prisma.usuario.create({
-        data: {
+    const users = [
+        {
             nome_completo: 'Administrador do Sistema',
             cpf: '00000000000',
             matricula: 'ADMIN01',
-            email: adminEmail,
+            email: 'admin@gestaopropostas.gov.br',
             senha_hash: hashedPassword,
             perfil: 'ADMIN',
             ativo: true,
         },
-    });
+        {
+            nome_completo: 'Frederico Silvério Duarte',
+            cpf: '94340650110',
+            matricula: '5132541',
+            email: 'fsduarte@tjgo.jus.br',
+            senha_hash: hashedPassword,
+            perfil: 'ADMIN',
+            ativo: true,
+        },
+    ];
 
-    console.log(`Admin user created: ${admin.email}`);
+    for (const userData of users) {
+        const existingUser = await prisma.usuario.findUnique({
+            where: { email: userData.email },
+        });
+
+        if (existingUser) {
+            console.log(`User already exists: ${userData.email}`);
+        } else {
+            const user = await prisma.usuario.create({
+                data: userData,
+            });
+            console.log(`User created: ${user.email}`);
+        }
+    }
 }
 
 main()

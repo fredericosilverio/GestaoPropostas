@@ -26,6 +26,8 @@ precoRoutes.post('/batch-entry', (req, res, next) => {
 }, precoController.createBatch);
 precoRoutes.get('/', precoController.list);
 precoRoutes.post('/', precoController.create);
+precoRoutes.put('/:id', precoController.update);
 precoRoutes.delete('/:id', precoController.delete);
 
 export { itemRoutes, precoRoutes };
+

@@ -37,7 +37,15 @@ export function ReportPage() {
             const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `relatorio_analise_${report?.demanda?.codigo || id}.pdf`);
+            const now = new Date();
+            const timestamp = now.getFullYear().toString() +
+                (now.getMonth() + 1).toString().padStart(2, '0') +
+                now.getDate().toString().padStart(2, '0') + "_" +
+                now.getHours().toString().padStart(2, '0') +
+                now.getMinutes().toString().padStart(2, '0') +
+                now.getSeconds().toString().padStart(2, '0');
+
+            link.setAttribute('download', `relatorio_analise_${report?.demanda?.codigo || id}_${timestamp}.pdf`);
             document.body.appendChild(link);
             link.click();
             link.remove();

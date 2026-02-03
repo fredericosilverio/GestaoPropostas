@@ -54,6 +54,44 @@ export class UploadService {
         });
     }
 
+    async listByDemanda(demandaId: number) {
+        // 1. Get direct demand attachments
+        const demandaAnexos = await prisma.anexo.findMany({
+            where: { entidade_tipo: 'DEMANDA', entidade_id: demandaId, ativo: true },
+            include: { uploaded_by: { select: { nome_completo: true } } }
+        });
+
+        // 2. Get all items for this demand
+        const items = await prisma.item.findMany({
+            where: { demanda_id: demandaId },
+            select: { id: true }
+        });
+        const itemIds = items.map(i => i.id);
+
+        // 3. Get all prices for these items
+        const precos = await prisma.preco.findMany({
+            where: { item_id: { in: itemIds } },
+            select: { id: true }
+        });
+        const precoIds = precos.map(p => p.id);
+
+        // 4. Get all price attachments
+        const precoAnexos = precoIds.length > 0 ? await prisma.anexo.findMany({
+            where: { entidade_tipo: 'PRECO', entidade_id: { in: precoIds }, ativo: true },
+            include: { uploaded_by: { select: { nome_completo: true } } }
+        }) : [];
+
+        // 5. Combine and sort by date
+        const allAnexos = [...demandaAnexos, ...precoAnexos].map(a => ({
+            ...a,
+            origem: a.entidade_tipo === 'DEMANDA' ? 'Demanda' : 'Cotação'
+        }));
+
+        allAnexos.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        return allAnexos;
+    }
+
     async delete(id: number) {
         // Soft delete
         return prisma.anexo.update({
@@ -62,3 +100,4 @@ export class UploadService {
         });
     }
 }
+

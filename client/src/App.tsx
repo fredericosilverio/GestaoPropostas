@@ -15,6 +15,8 @@ import { ProposalEntry } from './pages/demandas/ProposalEntry';
 import { ItemForm } from './pages/demandas/ItemForm';
 import { PriceManager } from './pages/demandas/PriceManager';
 import { ReportPage } from './pages/reports/ReportPage';
+import { UsuarioList } from './pages/usuarios/UsuarioList';
+import { UsuarioForm } from './pages/usuarios/UsuarioForm';
 import { FornecedorList } from './pages/fornecedores/FornecedorList';
 import { FornecedorForm } from './pages/fornecedores/FornecedorForm';
 import { AuditPage } from './pages/admin/AuditPage';
@@ -89,6 +91,11 @@ export default function App() {
 
               {/* Reports */}
               <Route path="/reports/market-analysis/:id" element={<PrivateLayout><ReportPage /></PrivateLayout>} />
+
+              {/* Usuarios */}
+              <Route path="/usuarios" element={<PrivateLayout><UsuarioList /></PrivateLayout>} />
+              <Route path="/usuarios/new" element={<PrivateLayout><UsuarioForm /></PrivateLayout>} />
+              <Route path="/usuarios/:id" element={<PrivateLayout><UsuarioForm /></PrivateLayout>} />
 
               {/* Fornecedores */}
               <Route path="/fornecedores" element={<PrivateLayout><FornecedorList /></PrivateLayout>} />

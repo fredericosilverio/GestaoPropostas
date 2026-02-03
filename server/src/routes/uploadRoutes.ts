@@ -15,6 +15,8 @@ uploadRoutes.use(authMiddleware);
 
 uploadRoutes.post('/', uploadConfig.single('file'), uploadController.upload);
 uploadRoutes.get('/', uploadController.list);
+uploadRoutes.get('/demanda/:demandaId', uploadController.listByDemanda);
 uploadRoutes.delete('/:id', uploadController.delete);
 
 export { uploadRoutes };
+

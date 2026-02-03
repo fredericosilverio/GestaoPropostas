@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
     { path: '/demandas', label: 'Demandas', icon: '📝' },
     { path: '/fornecedores', label: 'Fornecedores', icon: '🏢' },
     { path: '/audit', label: 'Auditoria', icon: '🔍' },
+    { path: '/usuarios', label: 'Usuários', icon: '👥' },
 ];
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {

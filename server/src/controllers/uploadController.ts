@@ -43,6 +43,16 @@ export class UploadController {
         }
     }
 
+    async listByDemanda(req: Request, res: Response) {
+        try {
+            const demandaId = Number(req.params.demandaId);
+            const anexos = await uploadService.listByDemanda(demandaId);
+            res.json(anexos);
+        } catch (error: any) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     async delete(req: Request, res: Response) {
         try {
             await uploadService.delete(Number(req.params.id));
@@ -52,3 +62,4 @@ export class UploadController {
         }
     }
 }
+

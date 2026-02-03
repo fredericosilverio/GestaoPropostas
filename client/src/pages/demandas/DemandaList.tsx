@@ -9,15 +9,26 @@ import type { Demanda } from '../../types/api';
 export function DemandaList() {
     const [demandas, setDemandas] = useState<Demanda[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
         loadDemandas();
     }, []);
 
-    async function loadDemandas() {
+    // Debounce search effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            loadDemandas(searchTerm);
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    async function loadDemandas(query: string = '') {
         try {
-            const response = await api.get('/demandas');
+            const params = query ? { q: query } : {};
+            const response = await api.get('/demandas', { params });
             setDemandas(response.data);
         } catch (error) {
             console.error('Erro ao carregar Demandas', error);
@@ -37,6 +48,20 @@ export function DemandaList() {
                     className="bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-md shadow-sm transition-colors flex items-center gap-2">
                     <span>+</span> Nova Demanda
                 </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="flex items-center space-x-4 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700">
+                <div className="flex-1 relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">🔍</span>
+                    <input
+                        type="text"
+                        placeholder="Buscar por código (PCA2026...) ou descrição..."
+                        className="pl-10 block w-full rounded-md border-gray-300 dark:border-zinc-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-zinc-700 dark:text-white sm:text-sm py-2"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
+                </div>
             </div>
 
             {demandas.length === 0 ? (

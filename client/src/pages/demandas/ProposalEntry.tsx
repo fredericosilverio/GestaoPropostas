@@ -1,10 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
 import { FornecedorSelect } from '../../components/FornecedorSelect';
-import type { Item } from '../../types/api';
+import type { Item, TipoFonte } from '../../types/api';
+
+const TIPO_FONTE_OPTIONS: { value: TipoFonte; label: string }[] = [
+    { value: 'COTACAO_FORNECEDOR', label: 'Cotação de Fornecedor' },
+    { value: 'PAINEL_PRECOS', label: 'Painel de Preços' },
+    { value: 'BANCO_PRECOS', label: 'Banco de Preços' },
+    { value: 'CONTRATACAO_SIMILAR', label: 'Contratação Similar' },
+    { value: 'NOTA_FISCAL', label: 'Nota Fiscal' },
+    { value: 'OUTROS', label: 'Outros' },
+];
 
 interface ProposalItem {
     item_id: number;
@@ -12,7 +21,7 @@ interface ProposalItem {
     descricao: string;
     quantidade: number;
     unidade_medida: string;
-    valor_unitario: string; // String for input handling
+    valor_unitario: string;
     marca: string;
 }
 
@@ -27,6 +36,11 @@ export function ProposalEntry() {
     // Header Data
     const [fornecedorId, setFornecedorId] = useState<number | null>(null);
     const [dataProposta, setDataProposta] = useState(new Date().toISOString().split('T')[0]);
+    const [tipoFonte, setTipoFonte] = useState<TipoFonte>('COTACAO_FORNECEDOR');
+
+    // File upload state
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
     // Items Data
     const [items, setItems] = useState<ProposalItem[]>([]);
@@ -65,6 +79,31 @@ export function ProposalEntry() {
         setItems(newItems);
     };
 
+    function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+        const files = Array.from(e.target.files || []);
+
+        // Validar tamanho (max 10MB cada)
+        const validFiles = files.filter(f => {
+            if (f.size > 10 * 1024 * 1024) {
+                addToast({ type: 'error', title: 'Arquivo muito grande', description: `${f.name} excede 10MB` });
+                return false;
+            }
+            return true;
+        });
+
+        // Limitar a 5 arquivos
+        if (selectedFiles.length + validFiles.length > 5) {
+            addToast({ type: 'error', title: 'Limite de arquivos', description: 'Máximo de 5 arquivos por proposta.' });
+            return;
+        }
+
+        setSelectedFiles(prev => [...prev, ...validFiles]);
+    }
+
+    function removeFile(index: number) {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    }
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
 
@@ -73,19 +112,17 @@ export function ProposalEntry() {
             return;
         }
 
+        // Validar anexo obrigatório
+        if (selectedFiles.length === 0) {
+            addToast({ type: 'error', title: 'Anexo Obrigatório', description: 'É necessário anexar ao menos 1 evidência (proposta, orçamento, print).' });
+            return;
+        }
+
         const itemsToSave = items
             .filter(item => item.valor_unitario && parseFloat(item.valor_unitario) > 0)
             .map(item => ({
                 item_id: item.item_id,
                 valor_unitario: parseFloat(item.valor_unitario),
-                // Using 'fonte' or 'numero_referencia' to store brand (optional hack if schema doesn't support marca)
-                // Actually, backend creates Preco but we didn't add 'marca' field.
-                // We'll ignore 'marca' for now or assume backend ignores it implicitly if not in body
-                // BUT we updated Controller to accept body. Frontend sends standard fields?
-                // Backend 'createBatch' expects { fornecedor_id, data_coleta, itens: [{ item_id, valor_unitario }] }
-                // So 'marca' is not saved yet. 
-                // Suggestion: Save 'marca' in 'numero_referencia' or 'observacoes' if critical.
-                // I will skip 'marca' persistence for this MVP step to avoid schema complexity mid-flight.
             }));
 
         if (itemsToSave.length === 0) {
@@ -95,13 +132,35 @@ export function ProposalEntry() {
 
         setSubmitting(true);
         try {
-            await api.post('/precos/batch-entry', {
+            // 1. Criar os preços em lote
+            const response = await api.post('/precos/batch-entry', {
                 fornecedor_id: fornecedorId,
                 data_coleta: dataProposta,
+                tipo_fonte: tipoFonte,
                 itens: itemsToSave
             });
 
-            addToast({ type: 'success', title: 'Sucesso', description: 'Proposta registrada com sucesso!' });
+            const createdCount = response.data.count || itemsToSave.length;
+
+            // 2. Upload dos anexos vinculados aos preços criados
+            // Como o batch cria múltiplos preços, vincularemos o anexo à demanda como um todo
+            // Alternativamente, se o backend retornar IDs, poderíamos vincular a cada preço
+            // Por ora, vinculamos ao primeiro item como referência
+            if (response.data.preco_ids && response.data.preco_ids.length > 0) {
+                for (const file of selectedFiles) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('entityType', 'PRECO');
+                    formData.append('entityId', response.data.preco_ids[0].toString());
+                    formData.append('descricao', `Proposta Lote - ${file.name}`);
+
+                    await api.post('/uploads', formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                }
+            }
+
+            addToast({ type: 'success', title: 'Sucesso', description: `Proposta registrada com ${createdCount} item(s) e ${selectedFiles.length} anexo(s)!` });
             navigate(`/demandas/${id}`);
         } catch (error: any) {
             addToast({ type: 'error', title: 'Erro', description: error.response?.data?.error || 'Erro ao salvar proposta' });
@@ -140,10 +199,10 @@ export function ProposalEntry() {
 
             {/* Config Panel */}
             <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Fornecedor
+                            Fornecedor *
                         </label>
                         <FornecedorSelect
                             value={fornecedorId}
@@ -153,15 +212,74 @@ export function ProposalEntry() {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Data da Proposta
+                            Data da Proposta *
                         </label>
                         <input
                             type="date"
                             value={dataProposta}
                             onChange={e => setDataProposta(e.target.value)}
                             className="w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md"
+                            required
                         />
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Tipo de Fonte *
+                        </label>
+                        <select
+                            value={tipoFonte}
+                            onChange={e => setTipoFonte(e.target.value as TipoFonte)}
+                            className="w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md"
+                        >
+                            {TIPO_FONTE_OPTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Evidence Upload */}
+                <div className="pt-4 border-t border-gray-200 dark:border-zinc-700">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        📎 Anexos de Evidência (Obrigatório) *
+                        <span className="text-gray-400 ml-2 font-normal">PDF, JPG, PNG - Max 10MB cada, até 5 arquivos</span>
+                    </label>
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            multiple
+                            className="hidden"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="bg-gray-200 hover:bg-gray-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded inline-flex items-center text-sm"
+                        >
+                            📎 Selecionar Arquivos
+                        </button>
+                        {selectedFiles.length === 0 && (
+                            <span className="text-red-500 text-xs">⚠️ Adicione ao menos 1 evidência (proposta/orçamento)</span>
+                        )}
+                    </div>
+                    {selectedFiles.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {selectedFiles.map((file, index) => (
+                                <div key={index} className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs flex items-center gap-2">
+                                    📄 {file.name}
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFile(index)}
+                                        className="text-red-500 hover:text-red-700 font-bold"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -208,7 +326,7 @@ export function ProposalEntry() {
                                         value={item.marca}
                                         onChange={e => handleItemChange(index, 'marca', e.target.value)}
                                         className="w-full px-2 py-1 border rounded focus:ring-primary focus:border-primary dark:bg-zinc-700 dark:border-zinc-600 dark:text-white"
-                                        disabled // Disabled for now as backend support isn't ready
+                                        disabled
                                         title="Recurso de marca em breve"
                                     />
                                 </td>

@@ -4,10 +4,6 @@ import { AuditService } from './AuditService';
 
 const prisma = new PrismaClient();
 const auditService = new AuditService();
-// Circular dependency injection or instantiate? Use lazy or just separate logic.
-// Simpler to instantiate or pass if needed.
-// To avoid circular dep, we won't import ItemService here directly in constructor if not needed.
-// But we need to recalc stats after price change.
 
 export class PrecoService {
     async create(data: any, userId: number) {
@@ -31,7 +27,7 @@ export class PrecoService {
             valor_unitario: Number(data.valor_unitario),
             fonte: data.fonte,
             cnpj_fornecedor: data.cnpj_fornecedor,
-            tipo_fonte: data.tipo_fonte,
+            tipo_fonte: data.tipo_fonte || 'COTACAO_FORNECEDOR',
             unidade_medida: data.unidade_medida,
             data_coleta: data.data_coleta ? new Date(data.data_coleta) : new Date(),
             classificacao: 'ACEITO',
@@ -70,12 +66,48 @@ export class PrecoService {
         }
     }
 
-    async createBatch(data: { fornecedor_id: number, data_coleta: Date, itens: { item_id: number, valor_unitario: number }[] }, userId: number) {
+    async update(id: number, data: any, userId: number) {
+        const existing = await prisma.preco.findUnique({ where: { id } });
+        if (!existing) throw new Error('Preço não encontrado');
+
+        const updateData: any = {};
+
+        if (data.valor_unitario !== undefined) updateData.valor_unitario = Number(data.valor_unitario);
+        if (data.fonte !== undefined) updateData.fonte = data.fonte;
+        if (data.tipo_fonte !== undefined) updateData.tipo_fonte = data.tipo_fonte;
+        if (data.data_coleta !== undefined) updateData.data_coleta = new Date(data.data_coleta);
+        if (data.cnpj_fornecedor !== undefined) updateData.cnpj_fornecedor = data.cnpj_fornecedor;
+
+        const preco = await prisma.preco.update({
+            where: { id },
+            data: updateData
+        });
+
+        await auditService.log({
+            usuario_id: userId,
+            acao: 'ATUALIZACAO',
+            entidade_tipo: 'PRECO',
+            entidade_id: preco.id,
+            descricao: `Preço ID ${id} atualizado para R$ ${preco.valor_unitario}`
+        });
+
+        await this.recalculateItemStats(existing.item_id);
+
+        return preco;
+    }
+
+    async createBatch(data: {
+        fornecedor_id: number,
+        data_coleta: Date,
+        tipo_fonte?: string,
+        itens: { item_id: number, valor_unitario: number }[]
+    }, userId: number) {
         const fornecedor = await prisma.fornecedor.findUnique({ where: { id: data.fornecedor_id } });
         if (!fornecedor) throw new Error('Fornecedor não encontrado');
 
         const createdIds: number[] = [];
         const affectedItemIds: Set<number> = new Set();
+        const tipoFonte = data.tipo_fonte || 'COTACAO_FORNECEDOR';
 
         await prisma.$transaction(async (tx) => {
             for (const item of data.itens) {
@@ -91,8 +123,8 @@ export class PrecoService {
                         razao_social: fornecedor.razao_social,
                         fonte: fornecedor.nome_fantasia || fornecedor.razao_social,
                         data_coleta: new Date(data.data_coleta),
-                        tipo_fonte: 'COTACAO_FORNECEDOR',
-                        unidade_medida: 'UN', // Should ideally fetch from Item, but defaulting for now
+                        tipo_fonte: tipoFonte,
+                        unidade_medida: 'UN',
                         classificacao: 'ACEITO',
                         cadastrado_por_id: userId,
                         ativo: true
@@ -108,7 +140,7 @@ export class PrecoService {
             usuario_id: userId,
             acao: 'CRIACAO',
             entidade_tipo: 'PRECO',
-            entidade_id: 0, // 0 for batch
+            entidade_id: 0,
             descricao: `Lote de ${createdIds.length} preços adicionados para fornecedor ${fornecedor.razao_social}`
         });
 
@@ -117,7 +149,7 @@ export class PrecoService {
             await this.recalculateItemStats(itemId);
         }
 
-        return { count: createdIds.length };
+        return { count: createdIds.length, preco_ids: createdIds };
     }
 
     async delete(id: number, userId: number) {
@@ -140,7 +172,7 @@ export class PrecoService {
     async listByItem(itemId: number) {
         return prisma.preco.findMany({
             where: { item_id: itemId },
-            include: { fornecedor: true }, // Include supplier details
+            include: { fornecedor: true },
             orderBy: { valor_unitario: 'asc' }
         });
     }

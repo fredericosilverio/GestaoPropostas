@@ -8,7 +8,16 @@ import { AttachmentList } from '../../components/AttachmentList';
 import { FornecedorSelect } from '../../components/FornecedorSelect';
 import { useToast } from '../../contexts/ToastContext';
 import { validateCNPJ, formatCNPJ } from '../../utils/validators';
-import type { Preco, Anexo, Fornecedor } from '../../types/api';
+import type { Preco, Anexo, Fornecedor, TipoFonte } from '../../types/api';
+
+const TIPO_FONTE_OPTIONS: { value: TipoFonte; label: string }[] = [
+    { value: 'COTACAO_FORNECEDOR', label: 'Cotação de Fornecedor' },
+    { value: 'PAINEL_PRECOS', label: 'Painel de Preços' },
+    { value: 'BANCO_PRECOS', label: 'Banco de Preços' },
+    { value: 'CONTRATACAO_SIMILAR', label: 'Contratação Similar' },
+    { value: 'NOTA_FISCAL', label: 'Nota Fiscal' },
+    { value: 'OUTROS', label: 'Outros' },
+];
 
 export function PriceManager() {
     const { itemId } = useParams();
@@ -23,6 +32,16 @@ export function PriceManager() {
     const [fonte, setFonte] = useState('');
     const [cnpj, setCnpj] = useState('');
     const [cnpjError, setCnpjError] = useState('');
+    const [tipoFonte, setTipoFonte] = useState<TipoFonte>('COTACAO_FORNECEDOR');
+    const [dataColeta, setDataColeta] = useState(new Date().toISOString().split('T')[0]);
+
+    // Edit modal state
+    const [editingPrice, setEditingPrice] = useState<Preco | null>(null);
+    const [editValor, setEditValor] = useState('');
+    const [editFonte, setEditFonte] = useState('');
+    const [editTipoFonte, setEditTipoFonte] = useState<TipoFonte>('COTACAO_FORNECEDOR');
+    const [editDataColeta, setEditDataColeta] = useState('');
+    const [saving, setSaving] = useState(false);
 
     async function handleFornecedorChange(id: number | null) {
         setFornecedorId(id);
@@ -89,9 +108,9 @@ export function PriceManager() {
                 fonte,
                 cnpj_fornecedor: cnpj,
                 fornecedor_id: fornecedorId,
-                tipo_fonte: 'COTACAO_FORNECEDOR',
+                tipo_fonte: tipoFonte,
                 unidade_medida: 'UN',
-                data_coleta: new Date(),
+                data_coleta: dataColeta,
                 classificacao: 'ACEITO'
             });
 
@@ -114,6 +133,9 @@ export function PriceManager() {
             setValor('');
             setFonte('');
             setCnpj('');
+            setFornecedorId(null);
+            setTipoFonte('COTACAO_FORNECEDOR');
+            setDataColeta(new Date().toISOString().split('T')[0]);
             setSelectedFiles([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
 
@@ -180,6 +202,35 @@ export function PriceManager() {
         }
     }
 
+    // Edit functions
+    function openEditModal(price: Preco) {
+        setEditingPrice(price);
+        setEditValor(String(price.valor_unitario));
+        setEditFonte(price.fonte);
+        setEditTipoFonte(price.tipo_fonte);
+        setEditDataColeta(new Date(price.data_coleta).toISOString().split('T')[0]);
+    }
+
+    async function handleSaveEdit() {
+        if (!editingPrice) return;
+        setSaving(true);
+        try {
+            await api.put(`/precos/${editingPrice.id}`, {
+                valor_unitario: Number(editValor),
+                fonte: editFonte,
+                tipo_fonte: editTipoFonte,
+                data_coleta: editDataColeta
+            });
+            addToast({ type: 'success', title: 'Sucesso', description: 'Preço atualizado com sucesso!' });
+            setEditingPrice(null);
+            refresh();
+        } catch (err: any) {
+            addToast({ type: 'error', title: 'Erro', description: err.response?.data?.error || 'Erro ao atualizar preço' });
+        } finally {
+            setSaving(false);
+        }
+    }
+
     if (loading) return <LoadingOverlay message="Carregando preços..." />;
 
     return (
@@ -204,31 +255,37 @@ export function PriceManager() {
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
                             <thead>
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Variação</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fonte</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Anexos</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Var.</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fonte</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Tipo</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Anexos</th>
+                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-zinc-700">
                                 {prices.map(p => (
                                     <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-zinc-700">
-                                        <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(p.valor_unitario))}
                                         </td>
-                                        <td className="px-6 py-4 text-sm">
+                                        <td className="px-4 py-4 text-sm">
                                             <StatusBadge status={p.classificacao} />
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 hidden md:table-cell">
+                                        <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-300 hidden md:table-cell">
                                             {p.percentual_variacao ? `${Number(p.percentual_variacao).toFixed(1)}%` : '-'}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                        <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-300">
                                             {p.fonte}
                                             <span className="block text-xs text-gray-400">{new Date(p.data_coleta).toLocaleDateString('pt-BR')}</span>
                                         </td>
-                                        <td className="px-6 py-4 text-sm">
+                                        <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-300 hidden lg:table-cell">
+                                            <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-zinc-700 rounded">
+                                                {TIPO_FONTE_OPTIONS.find(o => o.value === p.tipo_fonte)?.label || p.tipo_fonte}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-4 text-sm">
                                             <button
                                                 onClick={() => loadAttachments(p.id)}
                                                 className="text-blue-500 hover:text-blue-700 text-sm flex items-center gap-1"
@@ -241,7 +298,13 @@ export function PriceManager() {
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-right">
+                                        <td className="px-4 py-4 text-right space-x-2">
+                                            <button
+                                                onClick={() => openEditModal(p)}
+                                                className="text-blue-500 hover:text-blue-700 text-sm"
+                                            >
+                                                Editar
+                                            </button>
                                             <button
                                                 onClick={() => setDeleteId(p.id)}
                                                 className="text-red-500 hover:text-red-700 text-sm"
@@ -269,6 +332,25 @@ export function PriceManager() {
                             className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary" required
                         />
                     </div>
+                    <div className="md:col-span-1">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Data da Coleta</label>
+                        <input
+                            type="date"
+                            value={dataColeta} onChange={e => setDataColeta(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary" required
+                        />
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Tipo de Fonte *</label>
+                        <select
+                            value={tipoFonte} onChange={e => setTipoFonte(e.target.value as TipoFonte)}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary"
+                        >
+                            {TIPO_FONTE_OPTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                    </div>
                     <div className="md:col-span-2">
                         <label className="block text-xs font-medium text-gray-500 mb-1">Fornecedor (Cadastrado)</label>
                         <FornecedorSelect
@@ -282,7 +364,6 @@ export function PriceManager() {
                         <input
                             type="text" placeholder="Nome da Fonte"
                             value={fonte} onChange={e => setFonte(e.target.value)}
-                            // Readonly if supplier selected? Or allow override? Readonly behaves better for consistency.
                             readOnly={!!fornecedorId}
                             className={`w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary ${fornecedorId ? 'bg-gray-100 opacity-70 cursor-not-allowed' : ''}`} required
                         />
@@ -294,7 +375,7 @@ export function PriceManager() {
                                 type="text" placeholder="00.000.000/0000-00"
                                 value={cnpj}
                                 onChange={e => {
-                                    if (fornecedorId) return; // Prevent edit if supplier selected
+                                    if (fornecedorId) return;
                                     const value = e.target.value;
                                     setCnpj(value);
                                     if (cnpjError) setCnpjError('');
@@ -388,6 +469,67 @@ export function PriceManager() {
                 onConfirm={handleDelete}
                 onCancel={() => setDeleteId(null)}
             />
+
+            {/* Edit Modal */}
+            {editingPrice && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 w-full max-w-lg mx-4 shadow-xl">
+                        <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Editar Cotação</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor Unitário (R$)</label>
+                                <input
+                                    type="number" step="0.01"
+                                    value={editValor} onChange={e => setEditValor(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fonte</label>
+                                <input
+                                    type="text"
+                                    value={editFonte} onChange={e => setEditFonte(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Fonte</label>
+                                <select
+                                    value={editTipoFonte} onChange={e => setEditTipoFonte(e.target.value as TipoFonte)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white"
+                                >
+                                    {TIPO_FONTE_OPTIONS.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data da Coleta</label>
+                                <input
+                                    type="date"
+                                    value={editDataColeta} onChange={e => setEditDataColeta(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button
+                                onClick={() => setEditingPrice(null)}
+                                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                disabled={saving}
+                                className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded disabled:opacity-50"
+                            >
+                                {saving ? 'Salvando...' : 'Salvar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

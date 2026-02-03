@@ -7,8 +7,19 @@ const auditService = new AuditService();
 
 export class DemandaService {
     async list(filters?: any) {
+        const { q, ...otherFilters } = filters || {};
+
+        const where: any = { ...otherFilters };
+
+        if (q) {
+            where.OR = [
+                { codigo_demanda: { contains: q } },
+                { descricao: { contains: q } }
+            ];
+        }
+
         return prisma.demanda.findMany({
-            where: filters,
+            where,
             include: {
                 pca: {
                     select: { ano: true, numero_pca: true, orgao: true }

@@ -51,4 +51,16 @@ export class PrecoController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    async update(req: Request, res: Response) {
+        try {
+            const id = Number(req.params.id);
+            // @ts-ignore
+            const userId = req.user.id;
+            const preco = await precoService.update(id, req.body, userId);
+            res.json(preco);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }

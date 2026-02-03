@@ -9,27 +9,36 @@ interface Anexo {
     created_at: string;
     uploaded_by: { nome_completo: string };
     nome_arquivo_storage: string;
+    origem?: string; // 'Demanda' | 'Cotação'
 }
 
 interface Props {
     entityType: 'DEMANDA' | 'ITEM' | 'PRECO';
     entityId: number;
     refreshTrigger: number;
+    consolidate?: boolean; // If true and entityType is DEMANDA, fetch all related attachments
 }
 
-export function AttachmentList({ entityType, entityId, refreshTrigger }: Props) {
+export function AttachmentList({ entityType, entityId, refreshTrigger, consolidate = false }: Props) {
     const [anexos, setAnexos] = useState<Anexo[]>([]);
     const { addToast } = useToast();
 
     useEffect(() => {
         loadAnexos();
-    }, [entityId, refreshTrigger]);
+    }, [entityId, refreshTrigger, consolidate]);
 
     async function loadAnexos() {
         try {
-            const response = await api.get('/uploads', {
-                params: { entityType, entityId }
-            });
+            let response;
+            if (consolidate && entityType === 'DEMANDA') {
+                // Fetch all attachments related to this demand (including prices)
+                response = await api.get(`/uploads/demanda/${entityId}`);
+            } else {
+                // Fetch only direct attachments
+                response = await api.get('/uploads', {
+                    params: { entityType, entityId }
+                });
+            }
             setAnexos(response.data);
         } catch (error) {
             console.error(error);
@@ -56,14 +65,24 @@ export function AttachmentList({ entityType, entityId, refreshTrigger }: Props) 
                     <div className="flex items-center">
                         <span className="text-xl mr-2">📄</span>
                         <div>
-                            <a
-                                href={`${import.meta.env.VITE_API_URL || 'http://localhost:3333'}/files/${anexo.nome_arquivo_storage}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline font-medium"
-                            >
-                                {anexo.nome_arquivo}
-                            </a>
+                            <div className="flex items-center gap-2">
+                                <a
+                                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:3333'}/files/${anexo.nome_arquivo_storage}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline font-medium"
+                                >
+                                    {anexo.nome_arquivo}
+                                </a>
+                                {anexo.origem && (
+                                    <span className={`text-xs px-2 py-0.5 rounded ${anexo.origem === 'Demanda'
+                                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                                            : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                        }`}>
+                                        {anexo.origem}
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-xs text-gray-500">
                                 {(anexo.tamanho_bytes / 1024).toFixed(1)} KB • {anexo.uploaded_by?.nome_completo} • {new Date(anexo.created_at).toLocaleDateString()}
                             </p>
