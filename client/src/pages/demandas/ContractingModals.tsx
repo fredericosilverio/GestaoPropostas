@@ -1,4 +1,14 @@
 import { useState } from 'react';
+import { 
+    Dialog, 
+    DialogTitle, 
+    DialogContent, 
+    DialogActions, 
+    TextField, 
+    Button, 
+    Grid,
+    CircularProgress
+} from '@mui/material';
 import { api } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -13,8 +23,6 @@ export function InitiateContractingModal({ isOpen, onClose, onSuccess, demandaId
     const [processo, setProcesso] = useState('');
     const [loading, setLoading] = useState(false);
     const { addToast } = useToast();
-
-    if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,42 +42,39 @@ export function InitiateContractingModal({ isOpen, onClose, onSuccess, demandaId
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg w-full max-w-md shadow-xl">
-                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Iniciar Contratação</h3>
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                            Número do Processo Licitatório
-                        </label>
-                        <input
-                            type="text"
-                            required
-                            className="w-full border border-gray-300 dark:border-zinc-600 rounded-md p-2 dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary"
-                            value={processo}
-                            onChange={e => setProcesso(e.target.value)}
-                            placeholder="Ex: 2024001234"
-                        />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-md disabled:opacity-50 transition-colors"
-                        >
-                            {loading ? 'Salvando...' : 'Iniciar'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth>
+            <form onSubmit={handleSubmit}>
+                <DialogTitle>Iniciar Contratação</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Número do Processo Licitatório"
+                        type="text"
+                        fullWidth
+                        required
+                        value={processo}
+                        onChange={e => setProcesso(e.target.value)}
+                        placeholder="Ex: 2024001234"
+                        variant="outlined"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button 
+                        type="submit" 
+                        variant="contained" 
+                        color="warning" // Orange usually maps to warning or primary depending on theme, sticking to warning for now or custom
+                        disabled={loading}
+                        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+                    >
+                        {loading ? 'Salvando...' : 'Iniciar'}
+                    </Button>
+                </DialogActions>
+            </form>
+        </Dialog>
     );
 }
 
@@ -91,8 +96,6 @@ export function FinalizeContractModal({ isOpen, onClose, onSuccess, demandaId }:
     const [loading, setLoading] = useState(false);
     const { addToast } = useToast();
 
-    if (!isOpen) return null;
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -113,76 +116,77 @@ export function FinalizeContractModal({ isOpen, onClose, onSuccess, demandaId }:
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg w-full max-w-lg shadow-xl">
-                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Registrar Contrato</h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Número do Contrato</label>
-                        <input
-                            type="text" required
-                            className="w-full border border-gray-300 dark:border-zinc-600 rounded-md p-2 dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary"
-                            value={formData.numero_contrato}
-                            onChange={e => setFormData({ ...formData, numero_contrato: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Data de Assinatura</label>
-                        <input
-                            type="date" required
-                            className="w-full border border-gray-300 dark:border-zinc-600 rounded-md p-2 dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary"
-                            value={formData.data_contrato}
-                            onChange={e => setFormData({ ...formData, data_contrato: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Valor Contratado (R$)</label>
-                        <input
-                            type="number" step="0.01" required
-                            className="w-full border border-gray-300 dark:border-zinc-600 rounded-md p-2 dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary"
-                            value={formData.valor_contratado}
-                            onChange={e => setFormData({ ...formData, valor_contratado: e.target.value })}
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">CNPJ Fornecedor</label>
-                            <input
-                                type="text" required
-                                className="w-full border border-gray-300 dark:border-zinc-600 rounded-md p-2 dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary"
+        <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth>
+            <form onSubmit={handleSubmit}>
+                <DialogTitle>Registrar Contrato</DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid size={12}>
+                            <TextField
+                                label="Número do Contrato"
+                                fullWidth
+                                required
+                                value={formData.numero_contrato}
+                                onChange={e => setFormData({ ...formData, numero_contrato: e.target.value })}
+                            />
+                        </Grid>
+                        <Grid size={12}>
+                            <TextField
+                                label="Data de Assinatura"
+                                type="date"
+                                fullWidth
+                                required
+                                InputLabelProps={{ shrink: true }}
+                                value={formData.data_contrato}
+                                onChange={e => setFormData({ ...formData, data_contrato: e.target.value })}
+                            />
+                        </Grid>
+                        <Grid size={12}>
+                            <TextField
+                                label="Valor Contratado (R$)"
+                                type="number"
+                                fullWidth
+                                required
+                                inputProps={{ step: "0.01" }}
+                                value={formData.valor_contratado}
+                                onChange={e => setFormData({ ...formData, valor_contratado: e.target.value })}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            <TextField
+                                label="CNPJ Fornecedor"
+                                fullWidth
+                                required
                                 value={formData.cnpj_fornecedor}
                                 onChange={e => setFormData({ ...formData, cnpj_fornecedor: e.target.value })}
                             />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Razão Social</label>
-                            <input
-                                type="text" required
-                                className="w-full border border-gray-300 dark:border-zinc-600 rounded-md p-2 dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary"
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            <TextField
+                                label="Razão Social"
+                                fullWidth
+                                required
                                 value={formData.razao_social}
                                 onChange={e => setFormData({ ...formData, razao_social: e.target.value })}
                             />
-                        </div>
-                    </div>
-
-                    <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-zinc-700">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md disabled:opacity-50 transition-colors"
-                        >
-                            {loading ? 'Salvando...' : 'Confirmar Contratação'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onClose} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button 
+                        type="submit" 
+                        variant="contained" 
+                        color="success"
+                        disabled={loading}
+                        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+                    >
+                        {loading ? 'Salvando...' : 'Confirmar Contratação'}
+                    </Button>
+                </DialogActions>
+            </form>
+        </Dialog>
     );
 }

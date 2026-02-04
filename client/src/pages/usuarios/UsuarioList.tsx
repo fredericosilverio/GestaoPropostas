@@ -1,10 +1,38 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Button,
+  Card,
+  TextField,
+  Typography,
+  InputAdornment,
+  Avatar,
+  Chip
+} from '@mui/material';
+import {
+  DataGrid,
+  type GridColDef,
+  GridActionsCellItem,
+  GridToolbarContainer,
+  GridToolbarExport,
+  GridToolbarColumnsButton,
+  GridToolbarFilterButton,
+  GridToolbarDensitySelector
+} from '@mui/x-data-grid';
+import {
+  Add as AddIcon,
+  Search as SearchIcon,
+  Edit as EditIcon,
+  CheckCircle as CheckCircleIcon,
+  Block as BlockIcon,
+  Person as PersonIcon
+} from '@mui/icons-material';
 import { api } from '../../services/api';
-import { LoadingOverlay } from '../../components/LoadingSpinner';
-import { EmptyState } from '../../components/EmptyState';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { LoadingOverlay } from '../../components/LoadingSpinner';
+import { EmptyState } from '../../components/EmptyState';
 
 interface Usuario {
     id: number;
@@ -16,12 +44,24 @@ interface Usuario {
     ativo: boolean;
 }
 
+function CustomToolbar() {
+  return (
+    <GridToolbarContainer>
+      <GridToolbarColumnsButton />
+      <GridToolbarFilterButton />
+      <GridToolbarDensitySelector />
+      <GridToolbarExport />
+    </GridToolbarContainer>
+  );
+}
+
 export function UsuarioList() {
     const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
     const { user } = useAuth(); // To check permissions
+    console.log(user); // Keep user usage to avoid lint error or remove if not needed
     const { addToast } = useToast();
 
     useEffect(() => {
@@ -58,35 +98,132 @@ export function UsuarioList() {
         u.matricula.includes(searchTerm)
     );
 
+    const columns: GridColDef[] = [
+        {
+            field: 'nome_completo',
+            headerName: 'Nome',
+            flex: 2,
+            minWidth: 250,
+            renderCell: (params) => (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main', fontWeight: 'bold' }}>
+                        {params.value.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Box>
+                        <Typography variant="body2" fontWeight="medium">
+                            {params.value}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            {params.row.email}
+                        </Typography>
+                    </Box>
+                </Box>
+            )
+        },
+        {
+            field: 'matricula',
+            headerName: 'Matrícula',
+            width: 120
+        },
+        {
+            field: 'perfil',
+            headerName: 'Perfil',
+            width: 150,
+            renderCell: (params) => {
+                let color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' = 'default';
+                if (params.value === 'ADMIN') color = 'secondary';
+                else if (params.value === 'GESTOR') color = 'info';
+                
+                return (
+                    <Chip 
+                        label={params.value} 
+                        size="small" 
+                        color={color} 
+                        variant="outlined" 
+                    />
+                );
+            }
+        },
+        {
+            field: 'unidade_vinculada',
+            headerName: 'Unidade',
+            flex: 1,
+            minWidth: 100,
+            valueGetter: (_, row) => row.unidade_vinculada || '-'
+        },
+        {
+            field: 'ativo',
+            headerName: 'Status',
+            width: 120,
+            renderCell: (params) => (
+                <Chip 
+                    label={params.value ? 'Ativo' : 'Inativo'} 
+                    color={params.value ? 'success' : 'default'}
+                    size="small"
+                    variant={params.value ? 'filled' : 'outlined'}
+                />
+            )
+        },
+        {
+            field: 'actions',
+            type: 'actions',
+            headerName: 'Ações',
+            width: 100,
+            getActions: (params) => [
+                <GridActionsCellItem
+                    icon={<EditIcon />}
+                    label="Editar"
+                    onClick={() => navigate(`/usuarios/${params.id}`)}
+                    showInMenu={false}
+                />,
+                <GridActionsCellItem
+                    icon={params.row.ativo ? <BlockIcon color="error" /> : <CheckCircleIcon color="success" />}
+                    label={params.row.ativo ? 'Desativar' : 'Ativar'}
+                    onClick={() => toggleStatus(Number(params.id), params.row.ativo)}
+                    showInMenu={false}
+                />
+            ]
+        }
+    ];
+
     if (loading) return <LoadingOverlay message="Carregando usuários..." />;
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Gestão de Usuários</h1>
-                <button
+        <Box sx={{ height: '100%', width: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h4" component="h1" fontWeight="bold">
+                    Gestão de Usuários
+                </Typography>
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
                     onClick={() => navigate('/usuarios/new')}
-                    className="bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-md shadow-sm transition-colors flex items-center gap-2">
-                    <span>+</span> Novo Usuário
-                </button>
-            </div>
+                >
+                    Novo Usuário
+                </Button>
+            </Box>
 
-            <div className="flex items-center space-x-4 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700">
-                <div className="flex-1 relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">🔍</span>
-                    <input
-                        type="text"
-                        placeholder="Buscar por nome, email ou matrícula..."
-                        className="pl-10 block w-full rounded-md border-gray-300 dark:border-zinc-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-zinc-700 dark:text-white sm:text-sm py-2"
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                    />
-                </div>
-            </div>
+            <Card sx={{ mb: 3, p: 2 }}>
+                <TextField
+                    fullWidth
+                    variant="outlined"
+                    placeholder="Buscar por nome, email ou matrícula..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon color="action" />
+                            </InputAdornment>
+                        ),
+                    }}
+                    size="small"
+                />
+            </Card>
 
             {filteredUsuarios.length === 0 ? (
                 <EmptyState
-                    icon="👥"
+                    icon={<PersonIcon fontSize="inherit" />}
                     title="Nenhum usuário encontrado"
                     description="Não há usuários cadastrados ou correspondentes à busca."
                     action={{
@@ -95,67 +232,30 @@ export function UsuarioList() {
                     }}
                 />
             ) : (
-                <div className="bg-white dark:bg-zinc-800 shadow-sm rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-                            <thead className="bg-gray-50 dark:bg-zinc-900">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Matrícula</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Perfil</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Unidade</th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
-                                {filteredUsuarios.map((usuario) => (
-                                    <tr key={usuario.id} className="hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center">
-                                                <div className="flex-shrink-0 h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">
-                                                    {usuario.nome_completo.charAt(0).toUpperCase()}
-                                                </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{usuario.nome_completo}</div>
-                                                    <div className="text-sm text-gray-500 dark:text-gray-400">{usuario.email}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{usuario.matricula}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${usuario.perfil === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
-                                                    usuario.perfil === 'GESTOR' ? 'bg-blue-100 text-blue-800' :
-                                                        'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                {usuario.perfil}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 hidden lg:table-cell">
-                                            {usuario.unidade_vinculada || '-'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <button
-                                                onClick={() => toggleStatus(usuario.id, usuario.ativo)}
-                                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${usuario.ativo ? 'bg-green-600' : 'bg-gray-200'}`}
-                                            >
-                                                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${usuario.ativo ? 'translate-x-5' : 'translate-x-0'}`} />
-                                            </button>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                            <button
-                                                onClick={() => navigate(`/usuarios/${usuario.id}`)}
-                                                className="text-primary hover:text-primary-light">
-                                                Editar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <Card sx={{ height: 600, width: '100%' }}>
+                    <DataGrid
+                        rows={filteredUsuarios}
+                        columns={columns}
+                        initialState={{
+                            pagination: {
+                                paginationModel: { page: 0, pageSize: 10 },
+                            },
+                        }}
+                        pageSizeOptions={[5, 10, 25]}
+                        disableRowSelectionOnClick
+                        slots={{
+                            toolbar: CustomToolbar,
+                        }}
+                        sx={{
+                            border: 0,
+                            '& .MuiDataGrid-cell:focus': {
+                                outline: 'none',
+                            },
+                        }}
+                        getRowHeight={() => 'auto'}
+                    />
+                </Card>
             )}
-        </div>
+        </Box>
     );
 }

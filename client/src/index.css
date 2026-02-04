@@ -1,58 +1,6 @@
-@import "tailwindcss";
-
-/* Habilitar dark mode baseado em classe */
-@custom-variant dark (&:where(.dark, .dark *));
-
-@theme {
-  /* Paleta de Cores - Design Premium */
-  --color-primary: #1F4E78;
-  --color-primary-light: #4472C4;
-  --color-secondary: #007BFF;
-  --color-accent: #17A2B8;
-  
-  /* Cores de Status */
-  --color-success: #28A745;
-  --color-warning: #FFA500;
-  --color-danger: #DC3545;
-  --color-info: #17A2B8;
-
-  /* Cores de Fundo e Superfície */
-  --color-surface: #FFFFFF;
-  --color-background: #F8F9FA;
-  --color-text-primary: #212529;
-  --color-text-secondary: #6C757D;
-  --color-border: #DEE2E6;
-
-  /* Fontes */
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-}
-
-/* Reset básico e estilos globais */
-:root {
-  font-family: var(--font-sans);
-  line-height: 1.5;
-  font-weight: 400;
-  color: var(--color-text-primary);
-  background-color: var(--color-background);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Dark mode overrides */
-.dark {
-  color-scheme: dark;
-  --color-surface: #18181b;
-  --color-background: #09090b;
-  --color-text-primary: #fafafa;
-  --color-text-secondary: #a1a1aa;
-  --color-border: #3f3f46;
-}
-
 body {
   margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

@@ -1,5 +1,17 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect } from 'react';
+import type { FormEvent, ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import {
+    Box,
+    Paper,
+    Typography,
+    TextField,
+    Button,
+    Grid,
+    CircularProgress,
+    Container
+} from '@mui/material';
+import { Save as SaveIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { api } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
@@ -112,179 +124,197 @@ export function FornecedorForm() {
             .slice(0, 18);
     };
 
-    const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleCnpjChange = (e: ChangeEvent<HTMLInputElement>) => {
         setCnpj(formatCNPJ(e.target.value));
     };
 
     if (initialLoading) return <LoadingOverlay message="Carregando..." />;
 
     return (
-        <div className="max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">
-                {isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor'}
-            </h1>
+        <Container maxWidth="lg" sx={{ py: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Typography variant="h4" component="h1" fontWeight="bold">
+                    {isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor'}
+                </Typography>
+                <Button
+                    startIcon={<ArrowBackIcon />}
+                    onClick={() => navigate('/fornecedores')}
+                    variant="outlined"
+                    color="inherit"
+                >
+                    Voltar
+                </Button>
+            </Box>
 
-            <form onSubmit={handleSubmit} className="bg-white dark:bg-zinc-800 rounded-lg shadow p-6 space-y-6">
+            <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
+                <Grid container spacing={3}>
+                    {/* Dados Principais */}
+                    <Grid size={12}>
+                        <Typography variant="h6" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1 }}>
+                            Dados Principais
+                        </Typography>
+                    </Grid>
+                    
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                            label="Razão Social"
+                            value={razaoSocial}
+                            onChange={e => setRazaoSocial(e.target.value)}
+                            fullWidth
+                            required
+                            variant="outlined"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 3 }}>
+                        <TextField
+                            label="Nome Fantasia"
+                            value={nomeFantasia}
+                            onChange={e => setNomeFantasia(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 3 }}>
+                        <TextField
+                            label="CNPJ"
+                            value={cnpj}
+                            onChange={handleCnpjChange}
+                            fullWidth
+                            required
+                            inputProps={{ maxLength: 18 }}
+                            variant="outlined"
+                        />
+                    </Grid>
 
-                {/* Dados Principais */}
-                <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 pb-2 border-b dark:border-zinc-700">Dados Principais</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Razão Social *</label>
-                            <input
-                                type="text"
-                                value={razaoSocial}
-                                onChange={e => setRazaoSocial(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                                required
-                            />
-                        </div>
-                        <div className="md:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome Fantasia</label>
-                            <input
-                                type="text"
-                                value={nomeFantasia}
-                                onChange={e => setNomeFantasia(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-                        <div className="md:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">CNPJ *</label>
-                            <input
-                                type="text"
-                                value={cnpj}
-                                onChange={handleCnpjChange}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                                required
-                                maxLength={18}
-                            />
-                        </div>
-                    </div>
-                </div>
+                    {/* Endereço */}
+                    <Grid size={12} sx={{ mt: 2 }}>
+                        <Typography variant="h6" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1 }}>
+                            Endereço
+                        </Typography>
+                    </Grid>
+                    
+                    <Grid size={{ xs: 12, md: 2 }}>
+                        <TextField
+                            label="CEP"
+                            value={cep}
+                            onChange={e => setCep(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                            label="Logradouro"
+                            value={logradouro}
+                            onChange={e => setLogradouro(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 2 }}>
+                        <TextField
+                            label="Número"
+                            value={numero}
+                            onChange={e => setNumero(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 2 }}>
+                        <TextField
+                            label="Complemento"
+                            value={complemento}
+                            onChange={e => setComplemento(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    </Grid>
+                    
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <TextField
+                            label="Bairro"
+                            value={bairro}
+                            onChange={e => setBairro(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                            label="Cidade"
+                            value={cidade}
+                            onChange={e => setCidade(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 2 }}>
+                        <TextField
+                            label="UF"
+                            value={uf}
+                            onChange={e => setUf(e.target.value)}
+                            fullWidth
+                            inputProps={{ maxLength: 2, style: { textTransform: 'uppercase' } }}
+                            variant="outlined"
+                        />
+                    </Grid>
 
-                {/* Endereço */}
-                <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 pb-2 border-b dark:border-zinc-700">Endereço</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                        <div className="md:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">CEP</label>
-                            <input
-                                type="text"
-                                value={cep}
-                                onChange={e => setCep(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-                        <div className="md:col-span-4">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Logradouro</label>
-                            <input
-                                type="text"
-                                value={logradouro}
-                                onChange={e => setLogradouro(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-                        <div className="md:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Número</label>
-                            <input
-                                type="text"
-                                value={numero}
-                                onChange={e => setNumero(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bairro</label>
-                            <input
-                                type="text"
-                                value={bairro}
-                                onChange={e => setBairro(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Cidade</label>
-                            <input
-                                type="text"
-                                value={cidade}
-                                onChange={e => setCidade(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-                        <div className="md:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">UF</label>
-                            <input
-                                type="text"
-                                value={uf}
-                                onChange={e => setUf(e.target.value)}
-                                maxLength={2}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100 uppercase"
-                            />
-                        </div>
-                        <div className="md:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Complemento</label>
-                            <input
-                                type="text"
-                                value={complemento}
-                                onChange={e => setComplemento(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-                    </div>
-                </div>
+                    {/* Contato */}
+                    <Grid size={12} sx={{ mt: 2 }}>
+                        <Typography variant="h6" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1 }}>
+                            Contato
+                        </Typography>
+                    </Grid>
 
-                {/* Contato */}
-                <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 pb-2 border-b dark:border-zinc-700">Contato</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Responsável Legal</label>
-                            <input
-                                type="text"
-                                value={responsavelLegal}
-                                onChange={e => setResponsavelLegal(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">E-mail</label>
-                            <input
-                                type="email"
-                                value={emailContato}
-                                onChange={e => setEmailContato(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone</label>
-                            <input
-                                type="text"
-                                value={telefoneContato}
-                                onChange={e => setTelefoneContato(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            />
-                        </div>
-                    </div>
-                </div>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <TextField
+                            label="Responsável Legal"
+                            value={responsavelLegal}
+                            onChange={e => setResponsavelLegal(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <TextField
+                            label="E-mail"
+                            type="email"
+                            value={emailContato}
+                            onChange={e => setEmailContato(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <TextField
+                            label="Telefone"
+                            value={telefoneContato}
+                            onChange={e => setTelefoneContato(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    </Grid>
 
-                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-zinc-700">
-                    <button
-                        type="button"
-                        onClick={() => navigate('/fornecedores')}
-                        className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-light focus:outline-none disabled:opacity-50"
-                    >
-                        {loading ? 'Salvando...' : 'Salvar'}
-                    </button>
-                </div>
-            </form>
-        </div>
+                    {/* Botões */}
+                    <Grid size={12} sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => navigate('/fornecedores')}
+                            disabled={loading}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={loading}
+                            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                        >
+                            {loading ? 'Salvando...' : 'Salvar'}
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Paper>
+        </Container>
     );
 }

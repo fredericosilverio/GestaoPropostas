@@ -1,5 +1,26 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Button,
+  Paper,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Grid,
+  Stack
+} from '@mui/material';
+import {
+  ArrowBack as ArrowBackIcon,
+  Print as PrintIcon,
+  PictureAsPdf as PdfIcon,
+  TableView as ExcelIcon,
+  Warning as WarningIcon
+} from '@mui/icons-material';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
 import { ReportOptionsModal } from '../../components/ReportOptionsModal';
@@ -86,182 +107,259 @@ export function ReportPage() {
 
     if (error || !report) {
         return (
-            <div className="flex flex-col items-center justify-center py-12">
-                <div className="text-5xl mb-4">📊</div>
-                <p className="text-gray-500 dark:text-gray-400">{error || 'Relatório não encontrado.'}</p>
-                <button
+            <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="50vh">
+                <WarningIcon sx={{ fontSize: 60, mb: 2, color: 'text.secondary' }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                    {error || 'Relatório não encontrado.'}
+                </Typography>
+                <Button
+                    startIcon={<ArrowBackIcon />}
                     onClick={() => navigate(-1)}
-                    className="mt-4 text-primary hover:text-primary-light"
+                    variant="outlined"
+                    sx={{ mt: 2 }}
                 >
-                    ← Voltar
-                </button>
-            </div>
+                    Voltar
+                </Button>
+            </Box>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-zinc-900 p-8">
-            <div className="max-w-4xl mx-auto mb-6 flex justify-between items-center print:hidden">
-                <button onClick={() => navigate(-1)} className="text-gray-600 hover:text-gray-900">
-                    &larr; Voltar
-                </button>
-                <div className="space-x-4">
-                    <button onClick={handlePrint} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 4 }}>
+            <Box sx={{ maxWidth: '210mm', mx: 'auto', mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', '@media print': { display: 'none' } }}>
+                <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)} color="inherit">
+                    Voltar
+                </Button>
+                <Stack direction="row" spacing={2}>
+                    <Button variant="contained" color="primary" startIcon={<PrintIcon />} onClick={handlePrint}>
                         Imprimir
-                    </button>
-                    <button onClick={() => setIsOptionsModalOpen(true)} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    </Button>
+                    <Button variant="contained" color="secondary" startIcon={<PdfIcon />} onClick={() => setIsOptionsModalOpen(true)}>
                         PDF (Gerado)
-                    </button>
-                    <button onClick={handleExportExcel} className="bg-green-800 text-white px-4 py-2 rounded hover:bg-green-900 border border-green-700">
+                    </Button>
+                    <Button variant="outlined" color="success" startIcon={<ExcelIcon />} onClick={handleExportExcel}>
                         Excel
-                    </button>
-                </div>
-            </div>
+                    </Button>
+                </Stack>
+            </Box>
 
             {/* A4 Page Container */}
-            <div ref={printRef} className="bg-white text-black p-[20mm] shadow-lg mx-auto max-w-[210mm] min-h-[297mm] print:shadow-none print:m-0 print:w-full">
-
+            <Paper 
+                ref={printRef}
+                elevation={3}
+                sx={{
+                    width: '210mm',
+                    minHeight: '297mm',
+                    mx: 'auto',
+                    p: '20mm',
+                    bgcolor: 'white',
+                    color: 'black',
+                    '@media print': {
+                        boxShadow: 'none',
+                        m: 0,
+                        width: '100%',
+                        height: 'auto',
+                        overflow: 'visible'
+                    }
+                }}
+            >
                 {/* Header */}
-                <div className="border-b-2 border-gray-800 pb-4 mb-8 text-center">
-                    <h1 className="text-2xl font-bold uppercase">Estado de Goiás</h1>
-                    <h2 className="text-xl font-bold uppercase">{report.demanda.unidade_demandante}</h2>
-                    <h3 className="text-lg mt-2">Relatório de Análise de Mercado</h3>
-                </div>
+                <Box sx={{ borderBottom: '2px solid', borderColor: 'grey.800', pb: 2, mb: 4, textAlign: 'center' }}>
+                    <Typography variant="h5" fontWeight="bold" textTransform="uppercase">
+                        Estado de Goiás
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold" textTransform="uppercase">
+                        {report.demanda.unidade_demandante}
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ mt: 1 }}>
+                        Relatório de Análise de Mercado
+                    </Typography>
+                </Box>
 
                 {/* Info Block */}
-                <div className="grid grid-cols-2 gap-4 mb-8 text-sm">
-                    <div>
-                        <p><strong>Demanda:</strong> {report.demanda.codigo}</p>
-                        <p><strong>PCA:</strong> {report.demanda.pca}</p>
-                        <p><strong>Responsável:</strong> {report.demanda.responsavel}</p>
-                    </div>
-                    <div className="text-right">
-                        <p><strong>Data Emissão:</strong> {new Date(report.data_emissao).toLocaleDateString()}</p>
-                        <p><strong>Status:</strong> Estimada</p>
-                    </div>
-                </div>
+                <Grid container spacing={2} sx={{ mb: 4, fontSize: '0.875rem' }}>
+                    <Grid size={6}>
+                        <Typography variant="body2"><strong>Demanda:</strong> {report.demanda.codigo}</Typography>
+                        <Typography variant="body2"><strong>PCA:</strong> {report.demanda.pca}</Typography>
+                        <Typography variant="body2"><strong>Responsável:</strong> {report.demanda.responsavel}</Typography>
+                    </Grid>
+                    <Grid size={6} sx={{ textAlign: 'right' }}>
+                        <Typography variant="body2"><strong>Data Emissão:</strong> {new Date(report.data_emissao).toLocaleDateString()}</Typography>
+                        <Typography variant="body2"><strong>Status:</strong> Estimada</Typography>
+                    </Grid>
+                </Grid>
 
-                <div className="mb-6">
-                    <p className="font-bold mb-1">Objeto:</p>
-                    <p className="text-justify text-sm bg-gray-50 p-2 border rounded">{report.demanda.descricao}</p>
-                </div>
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                        Objeto:
+                    </Typography>
+                    <Paper variant="outlined" sx={{ p: 1, bgcolor: 'grey.50', textAlign: 'justify' }}>
+                        <Typography variant="body2">
+                            {report.demanda.descricao}
+                        </Typography>
+                    </Paper>
+                </Box>
 
                 {/* Items Table */}
-                <div className="mb-8">
-                    <h4 className="font-bold text-lg mb-2 border-b border-gray-300 pb-1">Resumo dos Itens</h4>
-                    <table className="w-full text-sm border-collapse">
-                        <thead>
-                            <tr className="bg-gray-100 border-b border-gray-300">
-                                <th className="text-left p-2">Item</th>
-                                <th className="text-left p-2">Descrição</th>
-                                <th className="text-center p-2">Unid.</th>
-                                <th className="text-right p-2">Qtd.</th>
-                                <th className="text-right p-2">Valor Unit. (Est.)</th>
-                                <th className="text-right p-2">Total (Est.)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {report.itens.map((item: any) => (
-                                <tr key={item.id} className="border-b border-gray-200">
-                                    <td className="p-2">{item.codigo_item}</td>
-                                    <td className="p-2 line-clamp-2">{item.descricao_detalhada}</td>
-                                    <td className="text-center p-2">{item.unidade_medida}</td>
-                                    <td className="text-right p-2">{item.quantidade}</td>
-                                    <td className="text-right p-2">
-                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor_estimado_unitario || 0)}
-                                    </td>
-                                    <td className="text-right p-2 font-bold">
-                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor_estimado_final || 0)}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                        <tfoot>
-                            <tr className="bg-gray-100 font-bold border-t-2 border-gray-400">
-                                <td colSpan={5} className="p-2 text-right">VALOR TOTAL ESTIMADO:</td>
-                                <td className="p-2 text-right">
-                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(report.resumo.valor_total_estimado)}
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
+                <Box sx={{ mb: 4 }}>
+                    <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ borderBottom: 1, borderColor: 'grey.300', pb: 0.5 }}>
+                        Resumo dos Itens
+                    </Typography>
+                    <TableContainer component={Paper} variant="outlined">
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow sx={{ bgcolor: 'grey.100' }}>
+                                    <TableCell>Item</TableCell>
+                                    <TableCell>Descrição</TableCell>
+                                    <TableCell align="center">Unid.</TableCell>
+                                    <TableCell align="right">Qtd.</TableCell>
+                                    <TableCell align="right">Valor Unit. (Est.)</TableCell>
+                                    <TableCell align="right">Total (Est.)</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {report.itens.map((item: any) => (
+                                    <TableRow key={item.id}>
+                                        <TableCell>{item.codigo_item}</TableCell>
+                                        <TableCell sx={{ maxWidth: 300, whiteSpace: 'normal' }}>
+                                            <Typography variant="body2" noWrap={false} sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                {item.descricao_detalhada}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell align="center">{item.unidade_medida}</TableCell>
+                                        <TableCell align="right">{item.quantidade}</TableCell>
+                                        <TableCell align="right">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor_estimado_unitario || 0)}
+                                        </TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor_estimado_final || 0)}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                <TableRow sx={{ bgcolor: 'grey.100' }}>
+                                    <TableCell colSpan={5} align="right" sx={{ fontWeight: 'bold' }}>
+                                        VALOR TOTAL ESTIMADO:
+                                    </TableCell>
+                                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(report.resumo.valor_total_estimado)}
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Box>
 
                 {/* Detailed Analysis */}
-                <div className="mb-8">
-                    <h4 className="font-bold text-lg mb-4 border-b border-gray-300 pb-1">Detalhamento da Composição de Preços</h4>
+                <Box sx={{ mb: 4 }}>
+                    <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ borderBottom: 1, borderColor: 'grey.300', pb: 0.5, mb: 2 }}>
+                        Detalhamento da Composição de Preços
+                    </Typography>
                     {report.itens.map((item: any) => (
-                        <div key={item.id} className="mb-6 break-inside-avoid">
-                            <div className="bg-gray-100 p-2 font-bold text-sm mb-2 border rounded">
-                                Item {item.codigo_item}: {item.descricao_detalhada} (Quant: {item.quantidade} {item.unidade_medida})
-                            </div>
+                        <Box key={item.id} sx={{ mb: 4, pageBreakInside: 'avoid' }}>
+                            <Paper variant="outlined" sx={{ p: 1, bgcolor: 'grey.100', mb: 1 }}>
+                                <Typography variant="subtitle2" fontWeight="bold">
+                                    Item {item.codigo_item}: {item.descricao_detalhada} (Quant: {item.quantidade} {item.unidade_medida})
+                                </Typography>
+                            </Paper>
 
-                            <table className="w-full text-xs border border-gray-300 mb-2">
-                                <thead>
-                                    <tr className="bg-gray-50">
-                                        <th className="p-1 border border-gray-300 text-left">Fonte</th>
-                                        <th className="p-1 border border-gray-300 text-center">Data</th>
-                                        <th className="p-1 border border-gray-300 text-right">Valor Unit.</th>
-                                        <th className="p-1 border border-gray-300 text-center">Situação</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {item.precos.map((preco: any) => (
-                                        <tr key={preco.id}>
-                                            <td className="p-1 border border-gray-300">{preco.fonte}</td>
-                                            <td className="p-1 border border-gray-300 text-center">{new Date(preco.data_coleta).toLocaleDateString()}</td>
-                                            <td className="p-1 border border-gray-300 text-right">
-                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(preco.valor_unitario)}
-                                            </td>
-                                            <td className="p-1 border border-gray-300 text-center">
-                                                {preco.classificacao === 'ACEITO' ? '✅ Aceito' :
-                                                    preco.classificacao === 'ACIMA_DO_LIMITE' ? '🔴 Acima (+25%)' :
-                                                        preco.classificacao === 'ABAIXO_DO_LIMITE' ? '🟡 Abaixo (-25%)' : '⚪ Inválido'}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <TableContainer component={Paper} variant="outlined" sx={{ mb: 1 }}>
+                                <Table size="small" sx={{ '& .MuiTableCell-root': { py: 0.5, px: 1 } }}>
+                                    <TableHead>
+                                        <TableRow sx={{ bgcolor: 'grey.50' }}>
+                                            <TableCell>Fonte</TableCell>
+                                            <TableCell align="center">Data</TableCell>
+                                            <TableCell align="right">Valor Unit.</TableCell>
+                                            <TableCell align="center">Situação</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {item.precos.map((preco: any) => (
+                                            <TableRow key={preco.id}>
+                                                <TableCell>{preco.fonte}</TableCell>
+                                                <TableCell align="center">{new Date(preco.data_coleta).toLocaleDateString()}</TableCell>
+                                                <TableCell align="right">
+                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(preco.valor_unitario)}
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    {preco.classificacao === 'ACEITO' ? '✅ Aceito' :
+                                                        preco.classificacao === 'ACIMA_DO_LIMITE' ? '🔴 Acima (+25%)' :
+                                                            preco.classificacao === 'ABAIXO_DO_LIMITE' ? '🟡 Abaixo (-25%)' : '⚪ Inválido'}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
 
-                            <div className="bg-gray-50 p-2 text-xs border border-gray-200 rounded grid grid-cols-4 gap-4">
-                                <div><strong>Média:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.estatisticas.media)}</div>
-                                <div><strong>Mediana:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.estatisticas.mediana)}</div>
-                                <div><strong>Desvio Padrão:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.estatisticas.desvioPadrao)}</div>
-                                <div><strong>CV:</strong> {(item.estatisticas?.cv ?? 0).toFixed(2)}%</div>
-                            </div>
-                        </div>
+                            <Paper variant="outlined" sx={{ p: 1, bgcolor: 'grey.50' }}>
+                                <Grid container spacing={2} sx={{ fontSize: '0.75rem' }}>
+                                    <Grid size={3}>
+                                        <Typography variant="caption" display="block"><strong>Média:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.estatisticas.media)}</Typography>
+                                    </Grid>
+                                    <Grid size={3}>
+                                        <Typography variant="caption" display="block"><strong>Mediana:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.estatisticas.mediana)}</Typography>
+                                    </Grid>
+                                    <Grid size={3}>
+                                        <Typography variant="caption" display="block"><strong>Desvio Padrão:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.estatisticas.desvioPadrao)}</Typography>
+                                    </Grid>
+                                    <Grid size={3}>
+                                        <Typography variant="caption" display="block"><strong>CV:</strong> {(item.estatisticas?.cv ?? 0).toFixed(2)}%</Typography>
+                                    </Grid>
+                                </Grid>
+                            </Paper>
+                        </Box>
                     ))}
-                </div>
+                </Box>
 
                 {/* Footer Signature Area */}
-                <div className="mt-16 text-center text-sm pt-8 break-inside-avoid">
-                    <div className="grid grid-cols-2 gap-16">
-                        <div className="border-t border-black pt-2">
-                            <p>{report.demanda.responsavel}</p>
-                            <p className="text-xs text-gray-500">Responsável pela Cotação</p>
-                        </div>
-                        <div className="border-t border-black pt-2">
-                            <p>Gestor Responsável</p>
-                            <p className="text-xs text-gray-500">Aprovação</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <Box sx={{ mt: 8, pt: 4, textAlign: 'center', pageBreakInside: 'avoid' }}>
+                    <Grid container spacing={8} justifyContent="center">
+                        <Grid size={5}>
+                            <Box sx={{ borderTop: 1, borderColor: 'black', pt: 1 }}>
+                                <Typography variant="body2">{report.demanda.responsavel}</Typography>
+                                <Typography variant="caption" color="text.secondary">Responsável pela Cotação</Typography>
+                            </Box>
+                        </Grid>
+                        <Grid size={5}>
+                            <Box sx={{ borderTop: 1, borderColor: 'black', pt: 1 }}>
+                                <Typography variant="body2">Gestor Responsável</Typography>
+                                <Typography variant="caption" color="text.secondary">Aprovação</Typography>
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </Box>
+            </Paper>
 
             <style>
                 {`
                     @media print {
+                        @page {
+                            margin: 0;
+                            size: auto;
+                        }
                         body * {
                             visibility: hidden;
                         }
-                        #report-content, #report-content * {
+                        #root > div {
+                            background: white;
+                        }
+                        .MuiPaper-root {
+                            visibility: visible;
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            box-shadow: none !important;
+                            margin: 0 !important;
+                            width: 100% !important;
+                            print-color-adjust: exact;
+                        }
+                        .MuiPaper-root * {
                             visibility: visible;
                         }
-                        .print\\:hidden {
-                            display: none;
-                        }
-                        .bg-gray-100 {
-                            background-color: white !important; 
+                        /* Ensure backgrounds are printed */
+                        * {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
                         }
                     }
                 `}
@@ -273,6 +371,6 @@ export function ReportPage() {
                 onGenerate={handleExportPDF}
                 isLoading={isPdfLoading}
             />
-        </div>
+        </Box>
     );
 }

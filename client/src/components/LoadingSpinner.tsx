@@ -1,69 +1,59 @@
-
+import { CircularProgress, Box, Typography, Backdrop, Skeleton as MuiSkeleton } from '@mui/material';
 
 interface LoadingSpinnerProps {
-    size?: 'sm' | 'md' | 'lg';
-    className?: string;
+    size?: number | string;
+    className?: string; // Kept for compatibility but not used for styling
 }
 
-export function LoadingSpinner({ size = 'md', className = '' }: LoadingSpinnerProps) {
-    const sizeClasses = {
-        sm: 'w-4 h-4 border-2',
-        md: 'w-8 h-8 border-3',
-        lg: 'w-12 h-12 border-4'
-    };
-
+export function LoadingSpinner({ size = 40 }: LoadingSpinnerProps) {
     return (
-        <div
-            className={`${sizeClasses[size]} border-gray-200 border-t-primary rounded-full animate-spin ${className}`}
-            role="status"
-            aria-label="Carregando"
-        />
+        <Box sx={{ display: 'flex' }}>
+            <CircularProgress size={size} />
+        </Box>
     );
 }
 
 interface LoadingOverlayProps {
     message?: string;
+    open?: boolean; // Added open prop for Backdrop
 }
 
-export function LoadingOverlay({ message = 'Carregando...' }: LoadingOverlayProps) {
+export function LoadingOverlay({ message = 'Carregando...', open = true }: LoadingOverlayProps) {
+    // If used as a full page overlay
     return (
-        <div className="flex flex-col items-center justify-center py-12">
-            <LoadingSpinner size="lg" />
-            <p className="mt-4 text-gray-500 dark:text-gray-400 text-sm">{message}</p>
-        </div>
+        <Backdrop
+            sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1, flexDirection: 'column', gap: 2 }}
+            open={open}
+        >
+            <CircularProgress color="inherit" />
+            <Typography variant="body1" color="inherit">{message}</Typography>
+        </Backdrop>
     );
 }
 
 interface SkeletonProps {
-    className?: string;
-    variant?: 'text' | 'circular' | 'rectangular';
+    className?: string; // Not used
+    variant?: 'text' | 'circular' | 'rectangular' | 'rounded';
+    width?: number | string;
+    height?: number | string;
 }
 
-export function Skeleton({ className = '', variant = 'text' }: SkeletonProps) {
-    const variantClasses = {
-        text: 'h-4 rounded',
-        circular: 'rounded-full',
-        rectangular: 'rounded-md'
-    };
-
+export function Skeleton({ variant = 'text', width, height }: SkeletonProps) {
     return (
-        <div
-            className={`animate-pulse bg-gray-200 dark:bg-zinc-700 ${variantClasses[variant]} ${className}`}
-            aria-hidden="true"
-        />
+        <MuiSkeleton variant={variant} width={width} height={height} animation="wave" />
     );
 }
 
 export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
     return (
-        <div className="space-y-3">
-            {Array.from({ length: rows }).map((_, rowIndex) => (
-                <div key={rowIndex} className="flex gap-4">
+        <Box sx={{ width: '100%' }}>
+             {Array.from({ length: rows }).map((_, rowIndex) => (
+                <Box key={rowIndex} sx={{ display: 'flex', gap: 2, mb: 1 }}>
                     {Array.from({ length: columns }).map((_, colIndex) => (
-                        <Skeleton key={colIndex} className="flex-1 h-8" variant="rectangular" />
+                        <MuiSkeleton key={colIndex} variant="rectangular" height={40} sx={{ flex: 1, borderRadius: 1 }} animation="wave" />
                     ))}
-                </div>
+                </Box>
             ))}
-        </div>
+        </Box>
     );
 }

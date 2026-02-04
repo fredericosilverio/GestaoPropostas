@@ -1,5 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import {
+    Box,
+    Paper,
+    Typography,
+    TextField,
+    Button,
+    Grid,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    CircularProgress,
+    Divider,
+    type SelectChangeEvent
+} from '@mui/material';
+import { Save as SaveIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { api } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -64,11 +80,12 @@ export function UsuarioForm() {
         }
     }
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value, type } = e.target;
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
+        const name = e.target.name as keyof UsuarioFormData;
+        const value = e.target.value;
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+            [name]: value
         }));
     };
 
@@ -120,159 +137,179 @@ export function UsuarioForm() {
         }
     };
 
-    if (loading && id) return <div className="p-8 text-center text-gray-500">Carregando dados...</div>;
+    if (loading && id) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+                <CircularProgress />
+            </Box>
+        );
+    }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{id ? 'Editar Usuário' : 'Novo Usuário'}</h1>
-                <button onClick={() => navigate('/usuarios')} className="text-gray-500 hover:text-gray-700">Voltar</button>
-            </div>
+        <Box sx={{ maxWidth: 'lg', mx: 'auto', p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Typography variant="h4" component="h1" fontWeight="bold" color="text.primary">
+                    {id ? 'Editar Usuário' : 'Novo Usuário'}
+                </Typography>
+                <Button
+                    startIcon={<ArrowBackIcon />}
+                    onClick={() => navigate('/usuarios')}
+                    variant="outlined"
+                    color="inherit"
+                >
+                    Voltar
+                </Button>
+            </Box>
 
-            <form onSubmit={handleSubmit} className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 space-y-6">
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
+                <Grid container spacing={3}>
                     {/* Nome */}
-                    <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome Completo *</label>
-                        <input
-                            type="text"
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                            label="Nome Completo"
                             name="nome_completo"
                             value={formData.nome_completo}
                             onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-zinc-700 dark:text-white"
+                            fullWidth
                             required
+                            variant="outlined"
                         />
-                    </div>
+                    </Grid>
 
                     {/* Email */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email Institucional *</label>
-                        <input
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                            label="Email Institucional"
                             type="email"
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-zinc-700 dark:text-white"
+                            fullWidth
                             required
+                            variant="outlined"
                         />
-                    </div>
+                    </Grid>
 
                     {/* Telefone */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefone</label>
-                        <input
-                            type="text"
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <TextField
+                            label="Telefone"
                             name="telefone"
                             value={formData.telefone}
                             onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-zinc-700 dark:text-white"
+                            fullWidth
+                            variant="outlined"
                         />
-                    </div>
+                    </Grid>
 
                     {/* CPF */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">CPF *</label>
-                        <input
-                            type="text"
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <TextField
+                            label="CPF"
                             name="cpf"
                             value={formData.cpf}
                             onChange={handleCpfChange}
-                            maxLength={14}
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-zinc-700 dark:text-white"
+                            fullWidth
                             required
+                            inputProps={{ maxLength: 14 }}
+                            variant="outlined"
                         />
-                    </div>
+                    </Grid>
 
                     {/* Matrícula */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Matrícula *</label>
-                        <input
-                            type="text"
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <TextField
+                            label="Matrícula"
                             name="matricula"
                             value={formData.matricula}
                             onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-zinc-700 dark:text-white"
+                            fullWidth
                             required
+                            variant="outlined"
                         />
-                    </div>
+                    </Grid>
 
                     {/* Perfil */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Perfil de Acesso *</label>
-                        <select
-                            name="perfil"
-                            value={formData.perfil}
-                            onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-zinc-700 dark:text-white"
-                        >
-                            <option value="OPERADOR">Operador</option>
-                            <option value="GESTOR">Gestor</option>
-                            <option value="ADMIN">Administrador</option>
-                        </select>
-                    </div>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <FormControl fullWidth required>
+                            <InputLabel>Perfil de Acesso</InputLabel>
+                            <Select
+                                name="perfil"
+                                value={formData.perfil}
+                                label="Perfil de Acesso"
+                                onChange={handleChange}
+                            >
+                                <MenuItem value="OPERADOR">Operador</MenuItem>
+                                <MenuItem value="GESTOR">Gestor</MenuItem>
+                                <MenuItem value="ADMIN">Administrador</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
 
                     {/* Unidade */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Unidade Vinculada</label>
-                        <input
-                            type="text"
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                            label="Unidade Vinculada"
                             name="unidade_vinculada"
                             value={formData.unidade_vinculada}
                             onChange={handleChange}
+                            fullWidth
                             placeholder="Ex: DITI, GAC..."
-                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-zinc-700 dark:text-white"
+                            variant="outlined"
                         />
-                    </div>
+                    </Grid>
 
-                    {/* Senha */}
-                    <div className="col-span-2 pt-4 border-t border-gray-200 dark:border-zinc-700">
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Segurança</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {id ? 'Nova Senha (deixe em branco para manter)' : 'Senha *'}
-                                </label>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-zinc-700 dark:text-white"
-                                    required={!id}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirmação de Senha</label>
-                                <input
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={e => setConfirmPassword(e.target.value)}
-                                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-zinc-700 dark:text-white"
-                                    required={!!password}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    {/* Segurança */}
+                    <Grid size={12}>
+                        <Divider sx={{ my: 2 }} />
+                        <Typography variant="h6" gutterBottom>
+                            Segurança
+                        </Typography>
+                    </Grid>
 
-                {/* Botões */}
-                <div className="flex justify-end pt-6 border-t border-gray-200 dark:border-zinc-700 gap-3">
-                    <button
-                        type="button"
-                        onClick={() => navigate('/usuarios')}
-                        className="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
-                    >
-                        {loading ? 'Salvando...' : 'Salvar Usuário'}
-                    </button>
-                </div>
-            </form>
-        </div>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                            label={id ? 'Nova Senha (deixe em branco para manter)' : 'Senha'}
+                            type="password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            fullWidth
+                            required={!id}
+                            variant="outlined"
+                        />
+                    </Grid>
+
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                            label="Confirmação de Senha"
+                            type="password"
+                            value={confirmPassword}
+                            onChange={e => setConfirmPassword(e.target.value)}
+                            fullWidth
+                            required={!!password}
+                            variant="outlined"
+                        />
+                    </Grid>
+
+                    <Grid size={12} sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => navigate('/usuarios')}
+                            disabled={loading}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={loading}
+                            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                        >
+                            {loading ? 'Salvando...' : 'Salvar Usuário'}
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Paper>
+        </Box>
     );
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Autocomplete, TextField, CircularProgress } from '@mui/material';
 import { api } from '../services/api';
 import type { Fornecedor } from '../types/api';
 
@@ -6,12 +7,22 @@ interface FornecedorSelectProps {
     value: number | null;
     onChange: (id: number | null) => void;
     required?: boolean;
-    className?: string;
+    error?: boolean;
+    helperText?: string;
+    label?: string;
 }
 
-export function FornecedorSelect({ value, onChange, required = false, className = '' }: FornecedorSelectProps) {
+export function FornecedorSelect({ 
+    value, 
+    onChange, 
+    required = false,
+    error = false,
+    helperText = '',
+    label = "Selecione um Fornecedor"
+}: FornecedorSelectProps) {
     const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedOption, setSelectedOption] = useState<Fornecedor | null>(null);
 
     useEffect(() => {
         async function loadFornecedores() {
@@ -27,23 +38,45 @@ export function FornecedorSelect({ value, onChange, required = false, className 
         loadFornecedores();
     }, []);
 
+    useEffect(() => {
+        if (value && fornecedores.length > 0) {
+            const found = fornecedores.find(f => f.id === value);
+            setSelectedOption(found || null);
+        } else if (!value) {
+            setSelectedOption(null);
+        }
+    }, [value, fornecedores]);
+
     if (loading) {
-        return <div className="animate-pulse h-10 bg-gray-200 dark:bg-zinc-700 rounded w-full"></div>;
+        return <CircularProgress size={20} />;
     }
 
     return (
-        <select
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
-            className={`w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100 ${className}`}
-            required={required}
-        >
-            <option value="">Selecione um Fornecedor...</option>
-            {fornecedores.map((f) => (
-                <option key={f.id} value={f.id}>
-                    {f.razao_social} {f.nome_fantasia ? `(${f.nome_fantasia})` : ''} - {f.cnpj}
-                </option>
-            ))}
-        </select>
+        <Autocomplete
+            value={selectedOption}
+            onChange={(_, newValue) => {
+                setSelectedOption(newValue);
+                onChange(newValue ? newValue.id : null);
+            }}
+            options={fornecedores}
+            getOptionLabel={(option) => {
+                const nome = option.nome_fantasia || option.razao_social;
+                return `${nome} - ${option.cnpj}`;
+            }}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderInput={(params) => (
+                <TextField
+                    {...params}
+                    label={label}
+                    required={required}
+                    error={error}
+                    helperText={helperText}
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                />
+            )}
+            noOptionsText="Nenhum fornecedor encontrado"
+        />
     );
 }

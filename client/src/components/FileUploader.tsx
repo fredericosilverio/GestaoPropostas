@@ -1,4 +1,6 @@
 import React, { useRef, useState } from 'react';
+import { Button, CircularProgress, Box } from '@mui/material';
+import { AttachFile as AttachFileIcon } from '@mui/icons-material';
 import { api } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 
@@ -46,25 +48,22 @@ export function FileUploader({ entityType, entityId, onUploadSuccess }: Props) {
     };
 
     return (
-        <div className="inline-block">
+        <Box sx={{ display: 'inline-block' }}>
             <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                className="hidden"
+                style={{ display: 'none' }}
             />
-            <button
+            <Button
+                variant="outlined"
+                color="primary"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded inline-flex items-center"
+                startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : <AttachFileIcon />}
             >
-                {uploading ? (
-                    <span className="animate-spin mr-2">⏳</span>
-                ) : (
-                    <span className="mr-2">📎</span>
-                )}
-                <span>Anexar Arquivo</span>
-            </button>
-        </div>
+                {uploading ? 'Enviando...' : 'Anexar Arquivo'}
+            </Button>
+        </Box>
     );
 }

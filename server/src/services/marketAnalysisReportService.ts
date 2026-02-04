@@ -55,10 +55,19 @@ export class MarketAnalysisReportService {
             }
 
             const stats = marketAnalysisService.calculateStatistics(precosParaCalculo);
+
+            // Recalculate percentual_variacao based on the specific median of this report configuration
+            const precosComVariacaoCorrigida = item.precos.map((p: any) => ({
+                ...p,
+                percentual_variacao: stats.mediana > 0
+                    ? ((Number(p.valor_unitario) - stats.mediana) / stats.mediana) * 100
+                    : 0
+            }));
+
             return {
                 ...item,
-                precos: item.precos, // Always show ALL prices in the table
-                precosParaCalculo: precosParaCalculo, // Filtered prices used for statistics
+                precos: precosComVariacaoCorrigida, // Use updated prices
+                precosParaCalculo: precosParaCalculo,
                 estatisticas: stats,
                 filterApplied: filterType
             };
@@ -93,7 +102,7 @@ export class MarketAnalysisReportService {
             headerTemplate: '<div></div>',
             footerTemplate: `
                 <div style="width: 100%; font-size: 9px; text-align: center; color: #666; padding: 5px;">
-                    <span>Relatório de Análise de Mercado - ${demanda.codigo_demanda}</span>
+                    <span>Análise de Mercado - ${demanda.codigo_demanda}</span>
                     <span style="margin-left: 20px;">Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
                 </div>
             `

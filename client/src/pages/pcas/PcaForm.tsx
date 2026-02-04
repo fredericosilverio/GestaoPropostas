@@ -2,7 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { useNavigate, useParams } from 'react-router-dom';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
+import { StatusBadge } from '../../components/StatusBadge';
 import type { User } from '../../types/api';
+import {
+  Container,
+  Box,
+  Paper,
+  Typography,
+  Grid,
+  TextField,
+  MenuItem,
+  Button,
+  Alert,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText
+} from '@mui/material';
+import {
+    Save as SaveIcon,
+    ArrowBack as ArrowBackIcon,
+  Assignment as AssignmentIcon,
+  AccountBalance as AccountBalanceIcon,
+  Person as PersonIcon,
+  Event as EventIcon,
+  CheckCircle as CheckCircleIcon,
+  Notes as NotesIcon
+} from '@mui/icons-material';
 
 const ORGAOS_PREDEFINIDOS = [
     'Secretaria de Administração',
@@ -82,9 +108,16 @@ const initialFormData: FormData = {
     historico_alteracoes: ''
 };
 
+import { useAuth } from '../../contexts/AuthContext';
+
 export function PcaForm() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { user: _user } = useAuth(); // _user to indicate unused or just remove it if strictly unused.
+    // Better to just remove it if unused.
+    // checking if user is used... "const canCreate = user?.perfil..." was in PcaList.tsx
+    // in PcaForm.tsx, user is NOT used.
+
     const isEditing = !!id;
 
     const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -213,415 +246,413 @@ export function PcaForm() {
     }
 
     const sections = [
-        { id: 'dados-gerais', label: 'Dados Gerais', icon: '📋' },
-        { id: 'vinculacao', label: 'Vinculação Institucional', icon: '🏛️' },
-        { id: 'responsaveis', label: 'Responsáveis', icon: '👤' },
-        { id: 'vigencia', label: 'Vigência', icon: '📅' },
-        { id: 'aprovacao', label: 'Aprovação', icon: '✅' },
-        { id: 'observacoes', label: 'Observações', icon: '📝' }
+        { id: 'dados-gerais', label: 'Dados Gerais', icon: <AssignmentIcon /> },
+        { id: 'vinculacao', label: 'Vinculação Institucional', icon: <AccountBalanceIcon /> },
+        { id: 'responsaveis', label: 'Responsáveis', icon: <PersonIcon /> },
+        { id: 'vigencia', label: 'Vigência', icon: <EventIcon /> },
+        { id: 'aprovacao', label: 'Aprovação', icon: <CheckCircleIcon /> },
+        { id: 'observacoes', label: 'Observações', icon: <NotesIcon /> }
     ];
-
-    const inputClass = "mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-zinc-600";
-    const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300";
 
     if (loading) return <LoadingOverlay message="Carregando PCA..." />;
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <Container maxWidth="xl" sx={{ py: 3 }}>
             {/* Header */}
-            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-6 mb-6">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+            <Box sx={{ 
+                mb: 4, 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' }, 
+                justifyContent: 'space-between', 
+                alignItems: { sm: 'center' }, 
+                gap: 2,
+                bgcolor: 'background.paper',
+                p: 3,
+                borderRadius: 1,
+                boxShadow: 1
+            }}>
+                <Box>
+                    <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
                         {isEditing ? `Editar PCA ${numeroPca}` : 'Novo Plano de Contratações Anual'}
-                    </h1>
+                    </Typography>
                     {isEditing && situacao && (
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${situacao === 'EM_ELABORACAO' ? 'bg-blue-100 text-blue-800' :
-                            situacao === 'EM_ANALISE' ? 'bg-purple-100 text-purple-800' :
-                                situacao === 'APROVADO' ? 'bg-green-100 text-green-800' :
-                                    situacao === 'EM_EXECUCAO' ? 'bg-yellow-100 text-yellow-800' :
-                                        situacao === 'REVISADO' ? 'bg-orange-100 text-orange-800' :
-                                            situacao === 'ENCERRADO' ? 'bg-gray-100 text-gray-800' :
-                                                'bg-red-100 text-red-800'
-                            }`}>
-                            {situacao.replace(/_/g, ' ')}
-                        </span>
+                        <Box sx={{ mt: 1 }}>
+                            <StatusBadge status={situacao} />
+                        </Box>
                     )}
-                </div>
-            </div>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<ArrowBackIcon />}
+                        onClick={() => navigate(-1)}
+                        color="inherit"
+                    >
+                        Cancelar
+                    </Button>
+                    {!isReadOnly && (
+                        <Button
+                            variant="contained"
+                            startIcon={<SaveIcon />}
+                            onClick={handleSubmit}
+                            disabled={saving}
+                            color="primary"
+                        >
+                            {saving ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Criar PCA')}
+                        </Button>
+                    )}
+                </Box>
+            </Box>
 
             {isReadOnly && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 p-4 mb-6 rounded-r-lg">
-                    <p className="text-yellow-700 dark:text-yellow-300">
-                        ⚠️ Este PCA está com status "{situacao}" e não pode ser editado.
-                    </p>
-                </div>
+                <Alert severity="warning" sx={{ mb: 4 }}>
+                    <Typography variant="subtitle2" fontWeight="bold">
+                        Atenção: Modo Somente Leitura
+                    </Typography>
+                    Este PCA está com status "{situacao}" e não pode ser editado.
+                </Alert>
             )}
 
             {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+                <Alert severity="error" sx={{ mb: 4 }}>
                     {error}
-                </div>
+                </Alert>
             )}
 
-            <div className="flex gap-6">
+            <Grid container spacing={3}>
                 {/* Sidebar Navigation */}
-                <div className="w-64 flex-shrink-0">
-                    <nav className="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-4 sticky top-4">
-                        <ul className="space-y-2">
-                            {sections.map(section => (
-                                <li key={section.id}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setActiveSection(section.id)}
-                                        className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeSection === section.id
-                                            ? 'bg-primary text-white'
-                                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700'
-                                            }`}
-                                    >
-                                        <span className="mr-2">{section.icon}</span>
-                                        {section.label}
-                                    </button>
-                                </li>
+                <Grid size={{ xs: 12, md: 3 }}>
+                    <Paper sx={{ position: 'sticky', top: 24 }}>
+                        <List component="nav">
+                            {sections.map((section) => (
+                                <ListItemButton
+                                    key={section.id}
+                                    selected={activeSection === section.id}
+                                    onClick={() => setActiveSection(section.id)}
+                                    sx={{
+                                        borderLeft: activeSection === section.id ? 4 : 0,
+                                        borderColor: 'primary.main',
+                                        '&.Mui-selected': {
+                                            bgcolor: 'action.selected',
+                                            '&:hover': {
+                                                bgcolor: 'action.hover',
+                                            },
+                                        },
+                                    }}
+                                >
+                                    <ListItemIcon sx={{ color: activeSection === section.id ? 'primary.main' : 'inherit' }}>
+                                        {section.icon}
+                                    </ListItemIcon>
+                                    <ListItemText 
+                                        primary={section.label} 
+                                        primaryTypographyProps={{ 
+                                            fontWeight: activeSection === section.id ? 'bold' : 'medium' 
+                                        }}
+                                    />
+                                </ListItemButton>
                             ))}
-                        </ul>
-                    </nav>
-                </div>
+                        </List>
+                    </Paper>
+                </Grid>
 
                 {/* Form Content */}
-                <div className="flex-1">
-                    <form onSubmit={handleSubmit}>
-                        {/* Dados Gerais */}
-                        {activeSection === 'dados-gerais' && (
-                            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-6 space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-zinc-700 pb-2">
-                                    📋 Dados Gerais do Plano
-                                </h2>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className={labelClass}>Ano de Referência *</label>
-                                        <input
-                                            type="number"
-                                            value={formData.ano}
-                                            onChange={e => updateField('ano', Number(e.target.value))}
-                                            min={2020}
-                                            max={2050}
-                                            className={inputClass}
-                                            disabled={isEditing || isReadOnly}
-                                            required
-                                        />
-                                    </div>
-                                    {isEditing && (
-                                        <div>
-                                            <label className={labelClass}>Código do PCA</label>
-                                            <input
-                                                type="text"
-                                                value={numeroPca}
-                                                className={`${inputClass} font-mono`}
-                                                disabled
+                <Grid size={{ xs: 12, md: 9 }}>
+                    <Paper sx={{ p: 4 }}>
+                        <form onSubmit={handleSubmit}>
+                            {/* Dados Gerais */}
+                            {activeSection === 'dados-gerais' && (
+                                <Box>
+                                    <Typography variant="h6" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1, mb: 3 }}>
+                                        Dados Gerais do Plano
+                                    </Typography>
+                                    <Grid container spacing={3}>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
+                                            <TextField
+                                                fullWidth
+                                                label="Ano de Referência"
+                                                type="number"
+                                                value={formData.ano}
+                                                onChange={e => updateField('ano', Number(e.target.value))}
+                                                inputProps={{ min: 2020, max: 2050 }}
+                                                disabled={isEditing || isReadOnly}
+                                                required
                                             />
-                                        </div>
-                                    )}
-                                </div>
+                                        </Grid>
+                                        {isEditing && (
+                                            <Grid size={{ xs: 12, sm: 6 }}>
+                                                <TextField
+                                                    fullWidth
+                                                    label="Código do PCA"
+                                                    value={numeroPca}
+                                                    disabled
+                                                    InputProps={{ sx: { fontFamily: 'monospace' } }}
+                                                />
+                                            </Grid>
+                                        )}
+                                        <Grid size={12}>
+                                            <TextField
+                                                fullWidth
+                                                label="Denominação do Plano"
+                                                value={formData.denominacao}
+                                                onChange={e => updateField('denominacao', e.target.value)}
+                                                placeholder="Ex: Plano Anual de Contratações 2026 – DTI"
+                                                helperText="Nome descritivo do plano para fácil identificação"
+                                                disabled={isReadOnly}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            )}
 
-                                <div>
-                                    <label className={labelClass}>Denominação do Plano</label>
-                                    <input
-                                        type="text"
-                                        value={formData.denominacao}
-                                        onChange={e => updateField('denominacao', e.target.value)}
-                                        placeholder="Ex: Plano Anual de Contratações 2026 – DTI"
-                                        className={inputClass}
-                                        disabled={isReadOnly}
-                                    />
-                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Nome descritivo do plano para fácil identificação
-                                    </p>
-                                </div>
-                            </div>
-                        )}
+                            {/* Vinculação Institucional */}
+                            {activeSection === 'vinculacao' && (
+                                <Box>
+                                    <Typography variant="h6" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1, mb: 3 }}>
+                                        Vinculação Institucional
+                                    </Typography>
+                                    <Grid container spacing={3}>
+                                        <Grid size={12}>
+                                            <TextField
+                                                select
+                                                fullWidth
+                                                label="Órgão / Entidade"
+                                                value={formData.orgao}
+                                                onChange={e => updateField('orgao', e.target.value)}
+                                                disabled={isEditing || isReadOnly}
+                                                required
+                                            >
+                                                <MenuItem value="">Selecione um órgão</MenuItem>
+                                                {ORGAOS_PREDEFINIDOS.map(org => (
+                                                    <MenuItem key={org} value={org}>{org}</MenuItem>
+                                                ))}
+                                            </TextField>
+                                        </Grid>
+                                        {formData.orgao === 'Outro' && (
+                                            <Grid size={12}>
+                                                <TextField
+                                                    fullWidth
+                                                    label="Nome do Órgão"
+                                                    value={formData.orgaoCustom}
+                                                    onChange={e => updateField('orgaoCustom', e.target.value)}
+                                                    placeholder="Digite o nome do órgão"
+                                                    disabled={isEditing || isReadOnly}
+                                                    required
+                                                />
+                                            </Grid>
+                                        )}
+                                        <Grid size={12}>
+                                            <TextField
+                                                fullWidth
+                                                label="Unidade Administrativa Demandante"
+                                                value={formData.unidade_demandante}
+                                                onChange={e => updateField('unidade_demandante', e.target.value)}
+                                                placeholder="Diretoria, Secretaria ou Coordenação responsável"
+                                                disabled={isReadOnly}
+                                            />
+                                        </Grid>
+                                        <Grid size={12}>
+                                            <TextField
+                                                fullWidth
+                                                label="Área Técnica Responsável"
+                                                value={formData.area_tecnica}
+                                                onChange={e => updateField('area_tecnica', e.target.value)}
+                                                placeholder="Área que prestará suporte técnico às contratações"
+                                                disabled={isReadOnly}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            )}
 
-                        {/* Vinculação Institucional */}
-                        {activeSection === 'vinculacao' && (
-                            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-6 space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-zinc-700 pb-2">
-                                    🏛️ Vinculação Institucional
-                                </h2>
+                            {/* Responsáveis */}
+                            {activeSection === 'responsaveis' && (
+                                <Box>
+                                    <Typography variant="h6" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1, mb: 3 }}>
+                                        Responsáveis
+                                    </Typography>
+                                    <Grid container spacing={3}>
+                                        <Grid size={12}>
+                                            <TextField
+                                                select
+                                                fullWidth
+                                                label="Responsável pela Consolidação / Gestão"
+                                                value={formData.responsavel_consolidacao_id}
+                                                onChange={e => updateField('responsavel_consolidacao_id', e.target.value ? Number(e.target.value) : '')}
+                                                disabled={isReadOnly}
+                                                helperText="Servidor encarregado do acompanhamento global do plano"
+                                            >
+                                                <MenuItem value="">Selecione um responsável</MenuItem>
+                                                {usuarios.map(u => (
+                                                    <MenuItem key={u.id} value={u.id}>{u.nome_completo}</MenuItem>
+                                                ))}
+                                            </TextField>
+                                        </Grid>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
+                                            <TextField
+                                                fullWidth
+                                                label="E-mail de Contato"
+                                                type="email"
+                                                value={formData.contato_email}
+                                                onChange={e => updateField('contato_email', e.target.value)}
+                                                disabled={isReadOnly}
+                                            />
+                                        </Grid>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
+                                            <TextField
+                                                fullWidth
+                                                label="Telefone de Contato"
+                                                value={formData.contato_telefone}
+                                                onChange={e => updateField('contato_telefone', e.target.value)}
+                                                disabled={isReadOnly}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            )}
 
-                                <div>
-                                    <label className={labelClass}>Órgão / Entidade *</label>
-                                    <select
-                                        value={formData.orgao}
-                                        onChange={e => updateField('orgao', e.target.value)}
-                                        className={inputClass}
-                                        disabled={isEditing || isReadOnly}
-                                        required
-                                    >
-                                        <option value="">Selecione um órgão</option>
-                                        {ORGAOS_PREDEFINIDOS.map(org => (
-                                            <option key={org} value={org}>{org}</option>
-                                        ))}
-                                    </select>
-                                    {formData.orgao === 'Outro' && (
-                                        <input
-                                            type="text"
-                                            value={formData.orgaoCustom}
-                                            onChange={e => updateField('orgaoCustom', e.target.value)}
-                                            placeholder="Digite o nome do órgão"
-                                            className={`${inputClass} mt-2`}
-                                            disabled={isEditing || isReadOnly}
-                                            required
-                                        />
-                                    )}
-                                </div>
+                            {/* Vigência */}
+                            {activeSection === 'vigencia' && (
+                                <Box>
+                                    <Typography variant="h6" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1, mb: 3 }}>
+                                        Período de Vigência
+                                    </Typography>
+                                    <Grid container spacing={3}>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
+                                            <TextField
+                                                fullWidth
+                                                label="Início da Vigência"
+                                                type="date"
+                                                value={formData.periodo_vigencia_inicio}
+                                                onChange={e => updateField('periodo_vigencia_inicio', e.target.value)}
+                                                InputLabelProps={{ shrink: true }}
+                                                disabled={isReadOnly}
+                                            />
+                                        </Grid>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
+                                            <TextField
+                                                fullWidth
+                                                label="Fim da Vigência"
+                                                type="date"
+                                                value={formData.periodo_vigencia_fim}
+                                                onChange={e => updateField('periodo_vigencia_fim', e.target.value)}
+                                                InputLabelProps={{ shrink: true }}
+                                                disabled={isReadOnly}
+                                            />
+                                        </Grid>
+                                        <Grid size={12}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Normalmente coincidente com o exercício financeiro (01/01 a 31/12)
+                                            </Typography>
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            )}
 
-                                <div>
-                                    <label className={labelClass}>Unidade Administrativa Demandante</label>
-                                    <input
-                                        type="text"
-                                        value={formData.unidade_demandante}
-                                        onChange={e => updateField('unidade_demandante', e.target.value)}
-                                        placeholder="Diretoria, Secretaria ou Coordenação responsável"
-                                        className={inputClass}
-                                        disabled={isReadOnly}
-                                    />
-                                </div>
+                            {/* Aprovação */}
+                            {activeSection === 'aprovacao' && (
+                                <Box>
+                                    <Typography variant="h6" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1, mb: 3 }}>
+                                        Dados da Aprovação
+                                    </Typography>
+                                    <Grid container spacing={3}>
+                                        <Grid size={12}>
+                                            <TextField
+                                                fullWidth
+                                                label="Autoridade Aprovadora"
+                                                value={formData.autoridade_aprovadora}
+                                                onChange={e => updateField('autoridade_aprovadora', e.target.value)}
+                                                placeholder="Nome da autoridade que aprovou o plano"
+                                                disabled={isReadOnly}
+                                            />
+                                        </Grid>
+                                        <Grid size={12}>
+                                            <TextField
+                                                fullWidth
+                                                label="Cargo da Autoridade"
+                                                value={formData.cargo_autoridade}
+                                                onChange={e => updateField('cargo_autoridade', e.target.value)}
+                                                disabled={isReadOnly}
+                                            />
+                                        </Grid>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
+                                            <TextField
+                                                select
+                                                fullWidth
+                                                label="Forma de Aprovação"
+                                                value={formData.forma_aprovacao}
+                                                onChange={e => updateField('forma_aprovacao', e.target.value)}
+                                                disabled={isReadOnly}
+                                            >
+                                                {FORMAS_APROVACAO.map(forma => (
+                                                    <MenuItem key={forma.value} value={forma.value}>{forma.label}</MenuItem>
+                                                ))}
+                                            </TextField>
+                                        </Grid>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
+                                            <TextField
+                                                fullWidth
+                                                label="Data da Aprovação"
+                                                type="date"
+                                                value={formData.data_aprovacao}
+                                                onChange={e => updateField('data_aprovacao', e.target.value)}
+                                                InputLabelProps={{ shrink: true }}
+                                                disabled={isReadOnly}
+                                            />
+                                        </Grid>
+                                        <Grid size={12}>
+                                            <TextField
+                                                fullWidth
+                                                label="Documento de Aprovação"
+                                                value={formData.documento_aprovacao}
+                                                onChange={e => updateField('documento_aprovacao', e.target.value)}
+                                                placeholder="Ex: Portaria nº 123/2026"
+                                                disabled={isReadOnly}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            )}
 
-                                <div>
-                                    <label className={labelClass}>Área Técnica Responsável</label>
-                                    <input
-                                        type="text"
-                                        value={formData.area_tecnica}
-                                        onChange={e => updateField('area_tecnica', e.target.value)}
-                                        placeholder="Área que prestará suporte técnico às contratações"
-                                        className={inputClass}
-                                        disabled={isReadOnly}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Responsáveis */}
-                        {activeSection === 'responsaveis' && (
-                            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-6 space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-zinc-700 pb-2">
-                                    👤 Responsáveis
-                                </h2>
-
-                                <div>
-                                    <label className={labelClass}>Responsável pela Consolidação / Gestão</label>
-                                    <select
-                                        value={formData.responsavel_consolidacao_id}
-                                        onChange={e => updateField('responsavel_consolidacao_id', e.target.value ? Number(e.target.value) : '')}
-                                        className={inputClass}
-                                        disabled={isReadOnly}
-                                    >
-                                        <option value="">Selecione um responsável</option>
-                                        {usuarios.map(u => (
-                                            <option key={u.id} value={u.id}>{u.nome_completo}</option>
-                                        ))}
-                                    </select>
-                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Servidor encarregado do acompanhamento global do plano
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className={labelClass}>E-mail Institucional</label>
-                                        <input
-                                            type="email"
-                                            value={formData.contato_email}
-                                            onChange={e => updateField('contato_email', e.target.value)}
-                                            placeholder="contato@orgao.gov.br"
-                                            className={inputClass}
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Telefone Funcional</label>
-                                        <input
-                                            type="text"
-                                            value={formData.contato_telefone}
-                                            onChange={e => updateField('contato_telefone', e.target.value)}
-                                            placeholder="(00) 0000-0000"
-                                            className={inputClass}
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Vigência */}
-                        {activeSection === 'vigencia' && (
-                            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-6 space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-zinc-700 pb-2">
-                                    📅 Período de Vigência
-                                </h2>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className={labelClass}>Início da Vigência</label>
-                                        <input
-                                            type="date"
-                                            value={formData.periodo_vigencia_inicio}
-                                            onChange={e => updateField('periodo_vigencia_inicio', e.target.value)}
-                                            className={inputClass}
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Fim da Vigência</label>
-                                        <input
-                                            type="date"
-                                            value={formData.periodo_vigencia_fim}
-                                            onChange={e => updateField('periodo_vigencia_fim', e.target.value)}
-                                            className={inputClass}
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                </div>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    Normalmente coincidente com o exercício financeiro (01/01 a 31/12)
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Aprovação */}
-                        {activeSection === 'aprovacao' && (
-                            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-6 space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-zinc-700 pb-2">
-                                    ✅ Aprovação Institucional
-                                </h2>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className={labelClass}>Autoridade Aprovadora</label>
-                                        <input
-                                            type="text"
-                                            value={formData.autoridade_aprovadora}
-                                            onChange={e => updateField('autoridade_aprovadora', e.target.value)}
-                                            placeholder="Nome da autoridade"
-                                            className={inputClass}
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Cargo / Função</label>
-                                        <input
-                                            type="text"
-                                            value={formData.cargo_autoridade}
-                                            onChange={e => updateField('cargo_autoridade', e.target.value)}
-                                            placeholder="Cargo da autoridade"
-                                            className={inputClass}
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className={labelClass}>Forma de Aprovação</label>
-                                        <select
-                                            value={formData.forma_aprovacao}
-                                            onChange={e => updateField('forma_aprovacao', e.target.value)}
-                                            className={inputClass}
-                                            disabled={isReadOnly}
-                                        >
-                                            {FORMAS_APROVACAO.map(f => (
-                                                <option key={f.value} value={f.value}>{f.label}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Data da Aprovação</label>
-                                        <input
-                                            type="date"
-                                            value={formData.data_aprovacao}
-                                            onChange={e => updateField('data_aprovacao', e.target.value)}
-                                            className={inputClass}
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className={labelClass}>Documento de Aprovação</label>
-                                    <input
-                                        type="text"
-                                        value={formData.documento_aprovacao}
-                                        onChange={e => updateField('documento_aprovacao', e.target.value)}
-                                        placeholder="Número do processo (ex.: SEI, PROAD)"
-                                        className={inputClass}
-                                        disabled={isReadOnly}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Observações */}
-                        {activeSection === 'observacoes' && (
-                            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-6 space-y-6">
-                                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 border-b border-gray-200 dark:border-zinc-700 pb-2">
-                                    📝 Observações
-                                </h2>
-
-                                <div>
-                                    <label className={labelClass}>Observações Gerais</label>
-                                    <textarea
-                                        value={formData.observacoes}
-                                        onChange={e => updateField('observacoes', e.target.value)}
-                                        placeholder="Informações relevantes não contempladas nos campos anteriores..."
-                                        className={inputClass}
-                                        rows={4}
-                                        disabled={isReadOnly}
-                                    />
-                                </div>
-
-                                {isEditing && (
-                                    <div>
-                                        <label className={labelClass}>Histórico de Alterações</label>
-                                        <textarea
-                                            value={formData.historico_alteracoes}
-                                            onChange={e => updateField('historico_alteracoes', e.target.value)}
-                                            placeholder="Resumo das modificações realizadas em cada versão..."
-                                            className={inputClass}
-                                            rows={4}
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Action Buttons */}
-                        <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-4 mt-6 flex justify-between items-center">
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                                {!isReadOnly && <span>* Campos obrigatórios</span>}
-                            </div>
-                            <div className="flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => isEditing ? navigate(`/pcas/${id}`) : navigate('/pcas')}
-                                    className="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-600"
-                                >
-                                    Cancelar
-                                </button>
-                                {!isReadOnly && (
-                                    <button
-                                        type="submit"
-                                        disabled={saving}
-                                        className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-light disabled:opacity-50"
-                                    >
-                                        {saving ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Criar PCA')}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+                            {/* Observações */}
+                            {activeSection === 'observacoes' && (
+                                <Box>
+                                    <Typography variant="h6" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1, mb: 3 }}>
+                                        Observações e Histórico
+                                    </Typography>
+                                    <Grid container spacing={3}>
+                                        <Grid size={12}>
+                                            <TextField
+                                                fullWidth
+                                                label="Observações Gerais"
+                                                multiline
+                                                rows={4}
+                                                value={formData.observacoes}
+                                                onChange={e => updateField('observacoes', e.target.value)}
+                                                disabled={isReadOnly}
+                                                placeholder="Informações relevantes não contempladas nos campos anteriores..."
+                                            />
+                                        </Grid>
+                                        {isEditing && (
+                                            <Grid size={12}>
+                                                <TextField
+                                                    fullWidth
+                                                    label="Histórico de Alterações"
+                                                    multiline
+                                                    rows={4}
+                                                    value={formData.historico_alteracoes}
+                                                    onChange={e => updateField('historico_alteracoes', e.target.value)}
+                                                    disabled={isReadOnly}
+                                                    placeholder="Resumo das modificações realizadas em cada versão..."
+                                                />
+                                            </Grid>
+                                        )}
+                                    </Grid>
+                                </Box>
+                            )}
+                        </form>
+                    </Paper>
+                </Grid>
+            </Grid>
+        </Container>
     );
 }

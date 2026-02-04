@@ -1,4 +1,20 @@
 import { useEffect, useState } from 'react';
+import {
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    IconButton,
+    Typography,
+    Chip,
+    Box,
+    Paper,
+    Link
+} from '@mui/material';
+import {
+    Description as FileIcon,
+    Delete as DeleteIcon
+} from '@mui/icons-material';
 import { api } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 
@@ -56,46 +72,69 @@ export function AttachmentList({ entityType, entityId, refreshTrigger, consolida
         }
     }
 
-    if (anexos.length === 0) return <div className="text-gray-500 text-sm mt-2">Nenhum anexo.</div>;
+    if (anexos.length === 0) {
+        return (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Nenhum anexo.
+            </Typography>
+        );
+    }
 
     return (
-        <ul className="mt-4 space-y-2">
+        <List sx={{ width: '100%', mt: 2, p: 0 }}>
             {anexos.map(anexo => (
-                <li key={anexo.id} className="flex justify-between items-center bg-gray-50 dark:bg-zinc-700 p-2 rounded border border-gray-200 dark:border-zinc-600">
-                    <div className="flex items-center">
-                        <span className="text-xl mr-2">📄</span>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <a
+                <ListItem
+                    key={anexo.id}
+                    component={Paper}
+                    variant="outlined"
+                    sx={{ mb: 1, borderRadius: 1, p: 1 }}
+                    secondaryAction={
+                        <IconButton 
+                            edge="end" 
+                            aria-label="delete" 
+                            onClick={() => handleDelete(anexo.id)} 
+                            color="error" 
+                            size="small"
+                        >
+                            <DeleteIcon />
+                        </IconButton>
+                    }
+                >
+                    <ListItemIcon sx={{ minWidth: 40 }}>
+                        <FileIcon color="action" />
+                    </ListItemIcon>
+                    <ListItemText
+                        primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                <Link
                                     href={`${import.meta.env.VITE_API_URL || 'http://localhost:3333'}/files/${anexo.nome_arquivo_storage}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline font-medium"
+                                    underline="hover"
+                                    color="primary"
+                                    fontWeight="medium"
                                 >
                                     {anexo.nome_arquivo}
-                                </a>
+                                </Link>
                                 {anexo.origem && (
-                                    <span className={`text-xs px-2 py-0.5 rounded ${anexo.origem === 'Demanda'
-                                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                                            : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                                        }`}>
-                                        {anexo.origem}
-                                    </span>
+                                    <Chip
+                                        label={anexo.origem}
+                                        size="small"
+                                        color={anexo.origem === 'Demanda' ? 'primary' : 'success'}
+                                        variant="outlined"
+                                        sx={{ height: 20, fontSize: '0.7rem' }}
+                                    />
                                 )}
-                            </div>
-                            <p className="text-xs text-gray-500">
+                            </Box>
+                        }
+                        secondary={
+                            <Typography variant="caption" color="text.secondary">
                                 {(anexo.tamanho_bytes / 1024).toFixed(1)} KB • {anexo.uploaded_by?.nome_completo} • {new Date(anexo.created_at).toLocaleDateString()}
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => handleDelete(anexo.id)}
-                        className="text-red-500 hover:text-red-700 text-sm px-2"
-                    >
-                        Excluir
-                    </button>
-                </li>
+                            </Typography>
+                        }
+                    />
+                </ListItem>
             ))}
-        </ul>
+        </List>
     );
 }

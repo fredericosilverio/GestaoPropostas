@@ -1,10 +1,41 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import {
+    Box,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    IconButton,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TextField,
+    Typography,
+    Chip,
+    Tooltip
+} from '@mui/material';
+import {
+    Add as AddIcon,
+    Edit as EditIcon,
+    Description as DescriptionIcon,
+    Assignment as AssignmentIcon,
+    AttachMoney as AttachMoneyIcon,
+    NoteAdd as NoteAddIcon,
+    CheckCircle as CheckCircleIcon
+} from '@mui/icons-material';
 import { api } from '../../services/api';
 import { InitiateContractingModal, FinalizeContractModal } from './ContractingModals';
 import { FileUploader } from '../../components/FileUploader';
 import { AttachmentList } from '../../components/AttachmentList';
 import { StatusTimeline } from '../../components/StatusTimeline';
+import { LoadingOverlay } from '../../components/LoadingSpinner';
 import { useToast } from '../../contexts/ToastContext';
 
 interface Item {
@@ -110,250 +141,289 @@ export function DemandaDetail() {
         }
     }
 
-    if (loading) return <div>Carregando...</div>;
-    if (!demanda) return <div>Demanda não encontrada</div>;
+    if (loading) return <LoadingOverlay message="Carregando detalhes da demanda..." />;
+    if (!demanda) return <Box p={3}><Typography>Demanda não encontrada</Typography></Box>;
 
     const formattedValorEstimado = demanda.valor_estimado_global
         ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(demanda.valor_estimado_global))
         : 'Não informado';
 
     return (
-        <div className="space-y-6">
-            <div className="bg-white dark:bg-zinc-800 shadow rounded-lg p-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{demanda.codigo_demanda}</h1>
-                        <p className="text-gray-500 dark:text-gray-400">{demanda.descricao}</p>
+        <Box sx={{ pb: 4 }}>
+            <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
+                    <Box>
+                        <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+                            {demanda.codigo_demanda}
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary" gutterBottom>
+                            {demanda.descricao}
+                        </Typography>
                         {demanda.pca && (
-                            <p className="text-sm text-gray-400 mt-1">
+                            <Typography variant="caption" display="block" color="text.disabled">
                                 PCA: {demanda.pca.numero_pca}/{demanda.pca.ano} (v{demanda.pca.versao})
-                            </p>
+                            </Typography>
                         )}
-                        <p className="text-sm text-gray-400">
-                            Valor Estimado Global: <span className="font-medium">{formattedValorEstimado}</span>
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                            {demanda.status}
-                        </span>
-                        <button
+                        <Typography variant="body2" sx={{ mt: 1 }}>
+                            Valor Estimado Global: <strong>{formattedValorEstimado}</strong>
+                        </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <Chip 
+                            label={demanda.status} 
+                            color="primary" 
+                            variant="outlined" 
+                            sx={{ fontWeight: 'bold' }} 
+                        />
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<DescriptionIcon />}
                             onClick={() => navigate(`/reports/market-analysis/${id}`)}
-                            className="text-sm bg-primary hover:bg-primary-dark text-white px-3 py-1 rounded"
+                            size="small"
                         >
-                            📄 Relatório
-                        </button>
-                        <button
+                            Relatório
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="success"
+                            startIcon={<AssignmentIcon />}
                             onClick={() => navigate(`/demandas/${id}/proposta-lote`)}
-                            className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+                            size="small"
                         >
-                            📝 Lançar Proposta
-                        </button>
-                    </div>
-                </div>
-            </div>
+                            Lançar Proposta
+                        </Button>
+                    </Box>
+                </Box>
+            </Paper>
 
             {/* Status Timeline */}
-            <StatusTimeline demandaId={Number(id)} />
+            <Box sx={{ mb: 3 }}>
+                <StatusTimeline demandaId={Number(id)} />
+            </Box>
+
+            {/* Items List */}
+            <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" fontWeight="bold">
+                        Itens da Demanda ({demanda.itens.length})
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        {['RASCUNHO', 'CADASTRADA', 'EM_ANALISE', 'EM_COTACAO'].includes(demanda.status) && (
+                            <>
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => navigate(`/demandas/${id}/itens/novo`)}
+                                    size="small"
+                                >
+                                    Novo Item
+                                </Button>
+                                {demanda.status === 'RASCUNHO' && (
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        startIcon={<CheckCircleIcon />}
+                                        onClick={() => setShowInitiateModal(true)}
+                                        size="small"
+                                    >
+                                        Publicar Demanda
+                                    </Button>
+                                )}
+                            </>
+                        )}
+                    </Box>
+                </Box>
+
+                <TableContainer variant="outlined" component={Paper} sx={{ boxShadow: 'none' }}>
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow sx={{ bgcolor: 'action.hover' }}>
+                                <TableCell>Item</TableCell>
+                                <TableCell>Descrição</TableCell>
+                                <TableCell>Unid.</TableCell>
+                                <TableCell>Qtd.</TableCell>
+                                <TableCell>Valor Unit. (Est.)</TableCell>
+                                <TableCell align="center">Cotações</TableCell>
+                                <TableCell align="center">Obs.</TableCell>
+                                <TableCell align="right">Ações</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {demanda.itens.map((item) => (
+                                <TableRow key={item.id} hover>
+                                    <TableCell>{item.codigo_item}</TableCell>
+                                    <TableCell sx={{ maxWidth: 300 }}>
+                                        <Typography variant="body2">{item.descricao}</Typography>
+                                        {item.observacoes && editingObsItemId !== item.id && (
+                                            <Paper 
+                                                elevation={0} 
+                                                sx={{ 
+                                                    mt: 1, 
+                                                    p: 0.5, 
+                                                    px: 1, 
+                                                    bgcolor: 'warning.light', 
+                                                    color: 'warning.contrastText',
+                                                    display: 'inline-block',
+                                                    fontSize: '0.75rem'
+                                                }}
+                                            >
+                                                📝 {item.observacoes}
+                                            </Paper>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>{item.unidade_medida}</TableCell>
+                                    <TableCell>{Number(item.quantidade)}</TableCell>
+                                    <TableCell>
+                                        {item.valor_estimado_unitario ?
+                                            new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.valor_estimado_unitario)) : '-'}
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Chip label={item._count?.precos || 0} size="small" />
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Tooltip title="Editar observações de mercado">
+                                            <IconButton
+                                                onClick={() => startEditObs(item)}
+                                                size="small"
+                                                color={item.observacoes ? "warning" : "default"}
+                                            >
+                                                {item.observacoes ? <EditIcon fontSize="small" /> : <NoteAddIcon fontSize="small" />}
+                                            </IconButton>
+                                        </Tooltip>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <Button
+                                            variant="text"
+                                            size="small"
+                                            startIcon={<AttachMoneyIcon />}
+                                            onClick={() => navigate(`/itens/${item.id}/precos`)}
+                                        >
+                                            Gerenciar Preços
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
+
+            {/* Observações Gerais da Análise */}
+            <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" fontWeight="bold">
+                        📋 Observações Gerais da Análise de Mercado
+                    </Typography>
+                    {!editingGeneralObs && (
+                        <Button
+                            startIcon={<EditIcon />}
+                            onClick={() => {
+                                setEditingGeneralObs(true);
+                                setGeneralObsText(demanda.observacoes || '');
+                            }}
+                            size="small"
+                        >
+                            Editar
+                        </Button>
+                    )}
+                </Box>
+                {editingGeneralObs ? (
+                    <Box>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={4}
+                            value={generalObsText}
+                            onChange={e => setGeneralObsText(e.target.value)}
+                            placeholder="Registre aqui observações gerais sobre a análise de mercado, metodologia aplicada, particularidades, ressalvas ou recomendações..."
+                            sx={{ mb: 2 }}
+                        />
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                            <Button
+                                onClick={() => setEditingGeneralObs(false)}
+                                color="inherit"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                variant="contained"
+                                onClick={saveGeneralObs}
+                                disabled={savingGeneralObs}
+                            >
+                                {savingGeneralObs ? 'Salvando...' : 'Salvar'}
+                            </Button>
+                        </Box>
+                    </Box>
+                ) : (
+                    <Box>
+                        {demanda.observacoes ? (
+                            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'warning.light', borderColor: 'warning.main', color: 'warning.contrastText' }}>
+                                <Typography variant="body2" whiteSpace="pre-wrap">
+                                    {demanda.observacoes}
+                                </Typography>
+                            </Paper>
+                        ) : (
+                            <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                                Nenhuma observação geral registrada. Clique em "Editar" para adicionar.
+                            </Typography>
+                        )}
+                    </Box>
+                )}
+            </Paper>
 
             {/* Anexos */}
-            <div className="bg-white dark:bg-zinc-800 shadow rounded-lg p-6">
-                <h2 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-100">
+            <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
                     📎 Anexos da Demanda
-                    <span className="text-sm font-normal text-gray-500 ml-2">(inclui anexos de cotações)</span>
-                </h2>
+                    <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                        (inclui anexos de cotações)
+                    </Typography>
+                </Typography>
                 <FileUploader
                     entityType="DEMANDA"
                     entityId={Number(id)}
                     onUploadSuccess={() => setRefreshAnexos(prev => prev + 1)}
                 />
-                <AttachmentList
-                    entityType="DEMANDA"
-                    entityId={Number(id)}
-                    refreshTrigger={refreshAnexos}
-                    consolidate={true}
-                />
-            </div>
-
-            {/* Observações Gerais da Análise */}
-            <div className="bg-white dark:bg-zinc-800 shadow rounded-lg p-6">
-                <div className="flex justify-between items-center mb-3">
-                    <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100">
-                        📋 Observações Gerais da Análise de Mercado
-                    </h2>
-                    {!editingGeneralObs && (
-                        <button
-                            onClick={() => {
-                                setEditingGeneralObs(true);
-                                setGeneralObsText(demanda.observacoes || '');
-                            }}
-                            className="text-sm text-primary hover:text-primary-dark"
-                        >
-                            ✏️ Editar
-                        </button>
-                    )}
-                </div>
-                {editingGeneralObs ? (
-                    <div className="space-y-3">
-                        <textarea
-                            value={generalObsText}
-                            onChange={e => setGeneralObsText(e.target.value)}
-                            placeholder="Registre aqui observações gerais sobre a análise de mercado, metodologia aplicada, particularidades, ressalvas ou recomendações..."
-                            rows={4}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white resize-none"
-                        />
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={() => setEditingGeneralObs(false)}
-                                className="px-3 py-1 text-gray-600 dark:text-gray-400 hover:text-gray-800"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={saveGeneralObs}
-                                disabled={savingGeneralObs}
-                                className="bg-primary hover:bg-primary-dark text-white px-3 py-1 rounded disabled:opacity-50"
-                            >
-                                {savingGeneralObs ? 'Salvando...' : 'Salvar'}
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {demanda.observacoes ? (
-                            <p className="whitespace-pre-wrap bg-amber-50 dark:bg-amber-900/30 p-3 rounded border-l-4 border-amber-400">
-                                {demanda.observacoes}
-                            </p>
-                        ) : (
-                            <p className="text-gray-400 italic">Nenhuma observação geral registrada. Clique em "Editar" para adicionar.</p>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            {/* Items List */}
-            <div className="bg-white dark:bg-zinc-800 shadow rounded-lg p-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-                    <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100">
-                        Itens da Demanda ({demanda.itens.length})
-                    </h2>
-                    <div className="flex gap-2">
-                        {['RASCUNHO', 'CADASTRADA', 'EM_ANALISE', 'EM_COTACAO'].includes(demanda.status) && (
-                            <>
-                                <button
-                                    onClick={() => navigate(`/demandas/${id}/itens/novo`)}
-                                    className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-                                >
-                                    + Novo Item
-                                </button>
-                                {demanda.status === 'RASCUNHO' && (
-                                    <button
-                                        onClick={() => setShowInitiateModal(true)}
-                                        className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
-                                    >
-                                        Publicar Demanda
-                                    </button>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-                        <thead>
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descrição</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unid.</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qtd.</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valor Unit. (Est.)</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Cotações</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Obs.</th>
-                                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-zinc-700">
-                            {demanda.itens.map((item) => (
-                                <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-zinc-700">
-                                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-gray-100">{item.codigo_item}</td>
-                                    <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs">
-                                        {item.descricao}
-                                        {item.observacoes && editingObsItemId !== item.id && (
-                                            <div className="mt-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded">
-                                                📝 {item.observacoes}
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-300">{item.unidade_medida}</td>
-                                    <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-300">{Number(item.quantidade)}</td>
-                                    <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                        {item.valor_estimado_unitario ?
-                                            new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.valor_estimado_unitario)) : '-'}
-                                    </td>
-                                    <td className="px-4 py-4 text-center text-sm">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                            {item._count?.precos || 0}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-4 text-center">
-                                        <button
-                                            onClick={() => startEditObs(item)}
-                                            className={`text-sm px-2 py-1 rounded ${item.observacoes ? 'text-amber-600 hover:bg-amber-50' : 'text-gray-400 hover:bg-gray-100'}`}
-                                            title="Editar observações de mercado"
-                                        >
-                                            {item.observacoes ? '📝' : '➕'}
-                                        </button>
-                                    </td>
-                                    <td className="px-4 py-4 text-right text-sm">
-                                        <button
-                                            onClick={() => navigate(`/itens/${item.id}/precos`)}
-                                            className="text-primary hover:text-primary-light font-medium">
-                                            Gerenciar Preços
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                <Box sx={{ mt: 2 }}>
+                    <AttachmentList
+                        entityType="DEMANDA"
+                        entityId={Number(id)}
+                        refreshTrigger={refreshAnexos}
+                        consolidate={true}
+                    />
+                </Box>
+            </Paper>
 
             {/* Edit Observations Modal */}
-            {editingObsItemId && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 w-full max-w-lg mx-4 shadow-xl">
-                        <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">
-                            Observações de Análise de Mercado
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                            Registre particularidades ou observações relevantes que serão incluídas no relatório.
-                        </p>
-                        <textarea
-                            value={obsText}
-                            onChange={e => setObsText(e.target.value)}
-                            placeholder="Ex: Preço do fornecedor X desconsiderado por estar fora da validade. Mediana utilizada como referência devido à alta dispersão."
-                            rows={4}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white resize-none"
-                        />
-                        <div className="flex justify-end gap-3 mt-4">
-                            <button
-                                onClick={() => setEditingObsItemId(null)}
-                                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={() => saveObservations(editingObsItemId)}
-                                disabled={savingObs}
-                                className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded disabled:opacity-50"
-                            >
-                                {savingObs ? 'Salvando...' : 'Salvar'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <Dialog open={!!editingObsItemId} onClose={() => setEditingObsItemId(null)} maxWidth="sm" fullWidth>
+                <DialogTitle>Observações de Análise de Mercado</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ mb: 2 }}>
+                        Registre particularidades ou observações relevantes que serão incluídas no relatório.
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        id="obs"
+                        label="Observações"
+                        type="text"
+                        fullWidth
+                        multiline
+                        rows={4}
+                        value={obsText}
+                        onChange={(e) => setObsText(e.target.value)}
+                        placeholder="Ex: Preço do fornecedor X desconsiderado por estar fora da validade. Mediana utilizada como referência devido à alta dispersão."
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditingObsItemId(null)} color="inherit">Cancelar</Button>
+                    <Button onClick={() => editingObsItemId && saveObservations(editingObsItemId)} variant="contained" disabled={savingObs}>
+                        {savingObs ? 'Salvando...' : 'Salvar'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {/* Modals */}
             {demanda && (
@@ -372,6 +442,6 @@ export function DemandaDetail() {
                     />
                 </>
             )}
-        </div>
+        </Box>
     );
 }

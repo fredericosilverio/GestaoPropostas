@@ -1,5 +1,33 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { 
+    Box, 
+    Button, 
+    Container, 
+    Grid, 
+    Paper, 
+    TextField, 
+    Typography, 
+    Select, 
+    MenuItem, 
+    FormControl, 
+    InputLabel, 
+    Stack,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Chip,
+    CircularProgress
+} from '@mui/material';
+import { 
+    ArrowBack as ArrowBackIcon, 
+    Save as SaveIcon, 
+    AttachFile as AttachFileIcon,
+    Description as DescriptionIcon
+} from '@mui/icons-material';
 import { api } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
@@ -139,9 +167,6 @@ export function ProposalEntry() {
             const createdCount = response.data.count || itemsToSave.length;
 
             // 2. Upload dos anexos vinculados aos preços criados
-            // Como o batch cria múltiplos preços, vincularemos o anexo à demanda como um todo
-            // Alternativamente, se o backend retornar IDs, poderíamos vincular a cada preço
-            // Por ora, vinculamos ao primeiro item como referência
             if (response.data.preco_ids && response.data.preco_ids.length > 0) {
                 for (const file of selectedFiles) {
                     const formData = new FormData();
@@ -168,194 +193,198 @@ export function ProposalEntry() {
     if (loading) return <LoadingOverlay message="Carregando itens..." />;
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 pb-20">
+        <Container maxWidth="xl" sx={{ py: 4, pb: 10 }}>
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <button
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Box>
+                    <Button
+                        startIcon={<ArrowBackIcon />}
                         onClick={() => navigate(`/demandas/${id}`)}
-                        className="flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-2"
+                        variant="text"
+                        color="inherit"
+                        sx={{ mb: 1 }}
                     >
-                        <span className="mr-1">←</span>
                         Voltar para Demanda
-                    </button>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    </Button>
+                    <Typography variant="h4" component="h1" fontWeight="bold">
                         Lançamento de Proposta em Lote
-                    </h1>
-                </div>
-                <button
+                    </Typography>
+                </Box>
+                <Button
+                    variant="contained"
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="flex items-center bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-md shadow-sm disabled:opacity-50"
+                    startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                    size="large"
                 >
-                    <span className="mr-2">💾</span>
                     {submitting ? 'Salvando...' : 'Salvar Proposta'}
-                </button>
-            </div>
+                </Button>
+            </Box>
 
             {/* Config Panel */}
-            <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Fornecedor *
-                        </label>
+            <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+                <Grid container spacing={3}>
+                    <Grid size={{ xs: 12, md: 4 }}>
                         <FornecedorSelect
                             value={fornecedorId}
                             onChange={setFornecedorId}
+                            label="Fornecedor *"
                             required
                         />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Data da Proposta *
-                        </label>
-                        <input
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <TextField
+                            label="Data da Proposta *"
                             type="date"
+                            fullWidth
                             value={dataProposta}
                             onChange={e => setDataProposta(e.target.value)}
-                            className="w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md"
+                            InputLabelProps={{ shrink: true }}
                             required
                         />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Tipo de Fonte *
-                        </label>
-                        <select
-                            value={tipoFonte}
-                            onChange={e => setTipoFonte(e.target.value as TipoFonte)}
-                            className="w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md"
-                        >
-                            {TIPO_FONTE_OPTIONS.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                        <FormControl fullWidth>
+                            <InputLabel>Tipo de Fonte *</InputLabel>
+                            <Select
+                                value={tipoFonte}
+                                label="Tipo de Fonte *"
+                                onChange={e => setTipoFonte(e.target.value as TipoFonte)}
+                            >
+                                {TIPO_FONTE_OPTIONS.map(opt => (
+                                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
 
-                {/* Link do Edital */}
-                <div className="pt-4 border-t border-gray-200 dark:border-zinc-700">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        🔗 Link do Edital / Fonte Pública
-                    </label>
-                    <input
-                        type="url"
-                        placeholder="https://exemplo.gov.br/edital/123"
-                        value={linkFonte}
-                        onChange={e => setLinkFonte(e.target.value)}
-                        className="w-full md:w-1/2 px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md"
-                    />
-                </div>
-
-                {/* Evidence Upload */}
-                <div className="pt-4 border-t border-gray-200 dark:border-zinc-700">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        📎 Anexos de Evidência (Opcional)
-                        <span className="text-gray-400 ml-2 font-normal">PDF, JPG, PNG - Max 10MB cada, até 5 arquivos</span>
-                    </label>
-                    <div className="flex flex-wrap gap-2 items-center">
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileSelect}
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            multiple
-                            className="hidden"
+                    {/* Link do Edital */}
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                            label="Link do Edital / Fonte Pública"
+                            fullWidth
+                            type="url"
+                            placeholder="https://exemplo.gov.br/edital/123"
+                            value={linkFonte}
+                            onChange={e => setLinkFonte(e.target.value)}
                         />
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="bg-gray-200 hover:bg-gray-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded inline-flex items-center text-sm"
-                        >
-                            📎 Selecionar Arquivos
-                        </button>
-                        {selectedFiles.length === 0 && (
-                            <span className="text-red-500 text-xs">⚠️ Adicione ao menos 1 evidência (proposta/orçamento)</span>
+                    </Grid>
+
+                    {/* Evidence Upload */}
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                            Anexos de Evidência (Opcional)
+                            <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                PDF, JPG, PNG - Max 10MB cada, até 5 arquivos
+                            </Typography>
+                        </Typography>
+                        
+                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileSelect}
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                multiple
+                                style={{ display: 'none' }}
+                            />
+                            <Button
+                                variant="outlined"
+                                startIcon={<AttachFileIcon />}
+                                onClick={() => fileInputRef.current?.click()}
+                                size="small"
+                            >
+                                Selecionar Arquivos
+                            </Button>
+                            {selectedFiles.length === 0 && (
+                                <Typography variant="caption" color="error">
+                                    ⚠️ Adicione ao menos 1 evidência
+                                </Typography>
+                            )}
+                        </Stack>
+
+                        {selectedFiles.length > 0 && (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                {selectedFiles.map((file, index) => (
+                                    <Chip
+                                        key={index}
+                                        label={file.name}
+                                        onDelete={() => removeFile(index)}
+                                        icon={<DescriptionIcon />}
+                                        color="primary"
+                                        variant="outlined"
+                                        size="small"
+                                    />
+                                ))}
+                            </Box>
                         )}
-                    </div>
-                    {selectedFiles.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                            {selectedFiles.map((file, index) => (
-                                <div key={index} className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs flex items-center gap-2">
-                                    📄 {file.name}
-                                    <button
-                                        type="button"
-                                        onClick={() => removeFile(index)}
-                                        className="text-red-500 hover:text-red-700 font-bold"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
+                    </Grid>
+                </Grid>
+            </Paper>
 
             {/* Items Table */}
-            <div className="bg-white dark:bg-zinc-800 shadow rounded-lg overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-                    <thead className="bg-gray-50 dark:bg-zinc-700/50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Item</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Qtd.</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Valor Unit. (R$)</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marca/Modelo (Opcional)</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
-                        {items.map((item, index) => (
-                            <tr key={item.item_id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {item.codigo_item}
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                                    {item.descricao}
-                                    <span className="block text-xs text-gray-500">{item.unidade_medida}</span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {item.quantidade}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0,00"
-                                        value={item.valor_unitario}
-                                        onChange={e => handleItemChange(index, 'valor_unitario', e.target.value)}
-                                        className="w-full px-2 py-1 border rounded focus:ring-primary focus:border-primary dark:bg-zinc-700 dark:border-zinc-600 dark:text-white"
-                                    />
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <input
-                                        type="text"
-                                        placeholder="Marca ofertada"
-                                        value={item.marca}
-                                        onChange={e => handleItemChange(index, 'marca', e.target.value)}
-                                        className="w-full px-2 py-1 border rounded focus:ring-primary focus:border-primary dark:bg-zinc-700 dark:border-zinc-600 dark:text-white"
-                                        disabled
-                                        title="Recurso de marca em breve"
-                                    />
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            <Paper elevation={2} sx={{ overflow: 'hidden' }}>
+                <TableContainer>
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow sx={{ bgcolor: 'action.hover' }}>
+                                <TableCell sx={{ width: 80 }}>Item</TableCell>
+                                <TableCell>Descrição</TableCell>
+                                <TableCell sx={{ width: 100 }}>Qtd.</TableCell>
+                                <TableCell sx={{ width: 200 }}>Valor Unit. (R$)</TableCell>
+                                <TableCell sx={{ width: 250 }}>Marca/Modelo (Opcional)</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {items.map((item, index) => (
+                                <TableRow key={item.item_id} hover>
+                                    <TableCell>{item.codigo_item}</TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2">{item.descricao}</Typography>
+                                        <Typography variant="caption" color="text.secondary">{item.unidade_medida}</Typography>
+                                    </TableCell>
+                                    <TableCell>{item.quantidade}</TableCell>
+                                    <TableCell>
+                                        <TextField
+                                            type="number"
+                                            size="small"
+                                            fullWidth
+                                            placeholder="0,00"
+                                            value={item.valor_unitario}
+                                            onChange={e => handleItemChange(index, 'valor_unitario', e.target.value)}
+                                            inputProps={{ step: "0.01", min: "0" }}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <TextField
+                                            type="text"
+                                            size="small"
+                                            fullWidth
+                                            placeholder="Marca ofertada"
+                                            value={item.marca}
+                                            onChange={e => handleItemChange(index, 'marca', e.target.value)}
+                                            disabled
+                                            title="Recurso de marca em breve"
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
 
-            <div className="flex justify-end pt-4">
-                <button
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
+                <Button
+                    variant="contained"
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="flex items-center bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-md shadow-lg text-lg font-medium disabled:opacity-50"
+                    startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                    size="large"
                 >
-                    <span className="mr-2">💾</span>
-                    Salvar Proposta
-                </button>
-            </div>
-        </div>
+                    {submitting ? 'Salvando...' : 'Salvar Proposta'}
+                </Button>
+            </Box>
+        </Container>
     );
 }

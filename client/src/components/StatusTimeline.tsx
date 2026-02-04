@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react';
+import {
+    Box,
+    Typography,
+    Paper,
+    Skeleton
+} from '@mui/material';
 import { api } from '../services/api';
 import { StatusBadge } from './StatusBadge';
 import type { AuditLog } from '../types/api';
@@ -7,15 +13,15 @@ interface Props {
     demandaId: number;
 }
 
-// Mapeamento de cores para status
+// Map status to MUI palette colors
 const STATUS_COLORS: Record<string, string> = {
-    'CADASTRADA': 'bg-gray-400',
-    'EM_ANALISE': 'bg-yellow-500',
-    'ESTIMADA': 'bg-purple-500',
-    'EM_CONTRATACAO': 'bg-blue-500',
-    'CONTRATADA': 'bg-green-500',
-    'SUSPENSA': 'bg-orange-500',
-    'CANCELADA': 'bg-red-600'
+    'CADASTRADA': 'grey.400',
+    'EM_ANALISE': 'warning.main',
+    'ESTIMADA': 'secondary.main',
+    'EM_CONTRATACAO': 'info.main',
+    'CONTRATADA': 'success.main',
+    'SUSPENSA': 'warning.dark',
+    'CANCELADA': 'error.main'
 };
 
 export function StatusTimeline({ demandaId }: Props) {
@@ -52,75 +58,99 @@ export function StatusTimeline({ demandaId }: Props) {
 
     if (loading) {
         return (
-            <div className="animate-pulse space-y-3">
-                <div className="h-16 bg-gray-200 dark:bg-zinc-700 rounded"></div>
-                <div className="h-16 bg-gray-200 dark:bg-zinc-700 rounded"></div>
-            </div>
+            <Box sx={{ width: '100%' }}>
+                <Skeleton variant="rectangular" height={60} sx={{ mb: 1, borderRadius: 1 }} />
+                <Skeleton variant="rectangular" height={60} sx={{ borderRadius: 1 }} />
+            </Box>
         );
     }
 
     if (logs.length === 0) {
         return (
-            <div className="text-center text-gray-500 py-4">
-                <p>Nenhuma transição de status registrada.</p>
-            </div>
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+                <Typography color="text.secondary">
+                    Nenhuma transição de status registrada.
+                </Typography>
+            </Box>
         );
     }
 
     return (
-        <div className="relative">
-            {/* Linha vertical conectando os eventos */}
-            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-300 dark:bg-zinc-600"></div>
+        <Box sx={{ position: 'relative', pl: 2 }}>
+            {/* Vertical Line */}
+            <Box
+                sx={{
+                    position: 'absolute',
+                    left: 23, 
+                    top: 0,
+                    bottom: 0,
+                    width: 2,
+                    bgcolor: 'divider',
+                    zIndex: 0
+                }}
+            />
 
-            <div className="space-y-4">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {logs.map((log, index) => {
                     const status = log.valor_novo as string || 'CADASTRADA';
                     const isFirst = index === 0;
 
                     return (
-                        <div key={log.id} className="relative flex items-start gap-4 pl-10">
-                            {/* Círculo do marcador */}
-                            <div className={`absolute left-2 w-5 h-5 rounded-full border-4 border-white dark:border-zinc-800 ${STATUS_COLORS[status] || 'bg-gray-400'} ${isFirst ? 'ring-2 ring-offset-2 ring-blue-500' : ''}`}></div>
-
-                            {/* Conteúdo do evento */}
-                            <div className={`flex-1 bg-gray-50 dark:bg-zinc-900 p-3 rounded-lg ${isFirst ? 'border border-blue-500' : ''}`}>
-                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <Box key={log.id} sx={{ position: 'relative', display: 'flex', gap: 2, alignItems: 'flex-start', zIndex: 1 }}>
+                            {/* Dot */}
+                            <Box
+                                sx={{
+                                    width: 16,
+                                    height: 16,
+                                    borderRadius: '50%',
+                                    bgcolor: STATUS_COLORS[status] || 'grey.400',
+                                    border: '4px solid',
+                                    borderColor: 'background.paper',
+                                    boxShadow: isFirst ? 1 : 0,
+                                    mt: 1.5,
+                                    ml: 0.5,
+                                    outline: isFirst ? '2px solid' : 'none',
+                                    outlineColor: 'primary.main',
+                                    outlineOffset: 2
+                                }}
+                            />
+                            
+                            {/* Content */}
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    flex: 1,
+                                    p: 2,
+                                    borderColor: isFirst ? 'primary.main' : 'divider',
+                                    bgcolor: 'background.paper',
+                                    borderWidth: isFirst ? 2 : 1
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                     {log.acao === 'CRIACAO' ? (
-                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <Typography variant="subtitle2" fontWeight="bold">
                                             Demanda Criada
-                                        </span>
+                                        </Typography>
                                     ) : (
                                         <>
                                             {log.valor_anterior && (
                                                 <>
                                                     <StatusBadge status={log.valor_anterior as any} />
-                                                    <span className="text-gray-400">→</span>
+                                                    <Typography color="text.secondary">→</Typography>
                                                 </>
                                             )}
                                             <StatusBadge status={status as any} />
                                         </>
                                     )}
-                                </div>
-
-                                {log.descricao && (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                                        {log.descricao}
-                                    </p>
-                                )}
-
-                                <div className="flex justify-between items-center text-xs text-gray-400">
-                                    <span>
-                                        {log.usuario?.nome_completo || 'Sistema'}
-                                    </span>
-                                    <span>
-                                        {new Date(log.data_hora).toLocaleString('pt-BR')}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                                </Box>
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                    {log.usuario?.nome_completo} • {new Date(log.data_hora).toLocaleString()}
+                                </Typography>
+                            </Paper>
+                        </Box>
                     );
                 })}
-            </div>
-        </div>
+            </Box>
+        </Box>
     );
 }

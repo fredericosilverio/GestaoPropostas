@@ -1,5 +1,42 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import {
+    Box,
+    Button,
+    Chip,
+    Container,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    FormControl,
+    Grid,
+    IconButton,
+    InputLabel,
+    MenuItem,
+    Paper,
+    Select,
+    Stack,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TextField,
+    Typography,
+    Tooltip
+} from '@mui/material';
+import {
+    ArrowBack as ArrowBackIcon,
+    AttachFile as AttachFileIcon,
+    Delete as DeleteIcon,
+    Edit as EditIcon,
+    Visibility as VisibilityIcon,
+    VisibilityOff as VisibilityOffIcon,
+    Add as AddIcon,
+    Description as DescriptionIcon
+} from '@mui/icons-material';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -8,7 +45,7 @@ import { AttachmentList } from '../../components/AttachmentList';
 import { FornecedorSelect } from '../../components/FornecedorSelect';
 import { useToast } from '../../contexts/ToastContext';
 import { validateCNPJ, formatCNPJ } from '../../utils/validators';
-import type { Preco, Anexo, Fornecedor, TipoFonte } from '../../types/api';
+import type { Preco, Anexo, Fornecedor, TipoFonte, Item } from '../../types/api';
 
 const TIPO_FONTE_OPTIONS: { value: TipoFonte; label: string }[] = [
     { value: 'COTACAO_FORNECEDOR', label: 'Cotação de Fornecedor' },
@@ -24,6 +61,7 @@ export function PriceManager() {
     const navigate = useNavigate();
     const { addToast } = useToast();
     const [prices, setPrices] = useState<Preco[]>([]);
+    const [item, setItem] = useState<Item | null>(null);
     const [loading, setLoading] = useState(true);
 
     // Form state
@@ -77,12 +115,24 @@ export function PriceManager() {
     }, [itemId]);
 
     async function loadData() {
+        setLoading(true);
+        
+        // Carregar preços (Prioridade)
         try {
             const pricesRes = await api.get(`/precos?item_id=${itemId}`);
             setPrices(pricesRes.data);
         } catch (err) {
-            console.error(err);
+            console.error('Erro ao carregar preços:', err);
             addToast({ type: 'error', title: 'Erro', description: 'Erro ao carregar preços' });
+        }
+
+        // Carregar dados do item (Secundário)
+        try {
+            const itemRes = await api.get(`/itens/${itemId}`);
+            setItem(itemRes.data);
+        } catch (err) {
+            console.error('Erro ao carregar item:', err);
+            // Não bloqueia a tela se falhar ao carregar detalhes do item
         } finally {
             setLoading(false);
         }
@@ -234,150 +284,185 @@ export function PriceManager() {
     if (loading) return <LoadingOverlay message="Carregando preços..." />;
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">Gerenciar Preços do Item</h1>
-                <button
-                    onClick={() => navigate(-1)}
-                    className="text-primary hover:text-primary-light text-sm"
-                >
-                    ← Voltar para Demanda
-                </button>
-            </div>
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+            <Box sx={{ mb: 4 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="h4" component="h1" fontWeight="bold">
+                        Gerenciar Preços do Item
+                    </Typography>
+                    <Button
+                        startIcon={<ArrowBackIcon />}
+                        onClick={() => navigate(-1)}
+                        variant="outlined"
+                    >
+                        Voltar para Demanda
+                    </Button>
+                </Box>
+                {item && (
+                    <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 'normal' }}>
+                        {item.codigo_item ? `${item.codigo_item} - ` : ''}{item.descricao}
+                    </Typography>
+                )}
+            </Box>
 
             {/* Prices Table */}
-            <div className="bg-white dark:bg-zinc-800 shadow rounded-lg p-6">
-                <h2 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-100">Cotações Cadastradas</h2>
+            <Paper elevation={2} sx={{ mb: 4, overflow: 'hidden' }}>
+                <Box sx={{ p: 2, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
+                    <Typography variant="h6" fontWeight="bold">
+                        Cotações Cadastradas
+                    </Typography>
+                </Box>
                 {prices.length === 0 ? (
-                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">Nenhuma cotação cadastrada.</p>
+                    <Box sx={{ p: 4, textAlign: 'center' }}>
+                        <Typography color="text.secondary">Nenhuma cotação cadastrada.</Typography>
+                    </Box>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-                            <thead>
-                                <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Var.</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fonte</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Tipo</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Anexos</th>
-                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-zinc-700">
+                    <TableContainer>
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow sx={{ bgcolor: 'action.hover' }}>
+                                    <TableCell>Valor</TableCell>
+                                    <TableCell>Status</TableCell>
+                                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Var.</TableCell>
+                                    <TableCell>Fonte</TableCell>
+                                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Tipo</TableCell>
+                                    <TableCell>Anexos</TableCell>
+                                    <TableCell align="right">Ações</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
                                 {prices.map(p => (
-                                    <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-zinc-700">
-                                        <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    <TableRow key={p.id} hover>
+                                        <TableCell sx={{ fontWeight: 'medium' }}>
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(p.valor_unitario))}
-                                        </td>
-                                        <td className="px-4 py-4 text-sm">
+                                        </TableCell>
+                                        <TableCell>
                                             <StatusBadge status={p.classificacao} />
-                                        </td>
-                                        <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-300 hidden md:table-cell">
+                                        </TableCell>
+                                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                                             {p.percentual_variacao ? `${Number(p.percentual_variacao).toFixed(1)}%` : '-'}
-                                        </td>
-                                        <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                            {p.fonte}
-                                            <span className="block text-xs text-gray-400">{new Date(p.data_coleta).toLocaleDateString('pt-BR')}</span>
-                                        </td>
-                                        <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-300 hidden lg:table-cell">
-                                            <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-zinc-700 rounded">
-                                                {TIPO_FONTE_OPTIONS.find(o => o.value === p.tipo_fonte)?.label || p.tipo_fonte}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-4 text-sm">
-                                            <button
+                                        </TableCell>
+                                        <TableCell>
+                                            <Typography variant="body2">{p.fonte}</Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {new Date(p.data_coleta).toLocaleDateString('pt-BR')}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                                            <Chip 
+                                                label={TIPO_FONTE_OPTIONS.find(o => o.value === p.tipo_fonte)?.label || p.tipo_fonte}
+                                                size="small"
+                                                variant="outlined"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Button
+                                                size="small"
+                                                startIcon={expandedPriceId === p.id ? <VisibilityOffIcon /> : <VisibilityIcon />}
                                                 onClick={() => loadAttachments(p.id)}
-                                                className="text-blue-500 hover:text-blue-700 text-sm flex items-center gap-1"
                                             >
-                                                📎 {expandedPriceId === p.id ? 'Ocultar' : 'Ver'}
-                                            </button>
+                                                {expandedPriceId === p.id ? 'Ocultar' : 'Ver'}
+                                            </Button>
                                             {expandedPriceId === p.id && (
-                                                <div className="mt-2">
+                                                <Box sx={{ mt: 1 }}>
                                                     <AttachmentList entityType="PRECO" entityId={p.id} refreshTrigger={0} />
-                                                </div>
+                                                </Box>
                                             )}
-                                        </td>
-                                        <td className="px-4 py-4 text-right space-x-2">
-                                            <button
-                                                onClick={() => openEditModal(p)}
-                                                className="text-blue-500 hover:text-blue-700 text-sm"
-                                            >
-                                                Editar
-                                            </button>
-                                            <button
-                                                onClick={() => setDeleteId(p.id)}
-                                                className="text-red-500 hover:text-red-700 text-sm"
-                                            >
-                                                Excluir
-                                            </button>
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                                <Tooltip title="Editar">
+                                                    <IconButton size="small" onClick={() => openEditModal(p)} color="primary">
+                                                        <EditIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Excluir">
+                                                    <IconButton size="small" onClick={() => setDeleteId(p.id)} color="error">
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Stack>
+                                        </TableCell>
+                                    </TableRow>
                                 ))}
-                            </tbody>
-                        </table>
-                    </div>
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
                 )}
-            </div>
+            </Paper>
 
             {/* Add Form */}
-            <div className="bg-white dark:bg-zinc-800 shadow rounded-lg p-6">
-                <h2 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-100">Adicionar Cotação</h2>
-                <form onSubmit={handleAddPrice} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-zinc-900 p-4 rounded">
-                    <div className="md:col-span-1">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Valor Unitário (R$)</label>
-                        <input
-                            type="number" step="0.01" placeholder="0,00"
-                            value={valor} onChange={e => setValor(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary" required
-                        />
-                    </div>
-                    <div className="md:col-span-1">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Data da Coleta</label>
-                        <input
-                            type="date"
-                            value={dataColeta} onChange={e => setDataColeta(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary" required
-                        />
-                    </div>
-                    <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Tipo de Fonte *</label>
-                        <select
-                            value={tipoFonte} onChange={e => setTipoFonte(e.target.value as TipoFonte)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary"
-                        >
-                            {TIPO_FONTE_OPTIONS.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Fornecedor (Cadastrado)</label>
-                        <FornecedorSelect
-                            value={fornecedorId}
-                            onChange={handleFornecedorChange}
-                        />
-                    </div>
+            <Paper elevation={2} sx={{ p: 3 }}>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                    Adicionar Cotação
+                </Typography>
+                <Box component="form" onSubmit={handleAddPrice}>
+                    <Grid container spacing={3}>
+                        <Grid size={{ xs: 12, md: 3 }}>
+                            <TextField
+                                label="Valor Unitário (R$)"
+                                type="number"
+                                fullWidth
+                                required
+                                value={valor}
+                                onChange={e => setValor(e.target.value)}
+                                inputProps={{ step: "0.01" }}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 3 }}>
+                            <TextField
+                                label="Data da Coleta"
+                                type="date"
+                                fullWidth
+                                required
+                                value={dataColeta}
+                                onChange={e => setDataColeta(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <FormControl fullWidth>
+                                <InputLabel>Tipo de Fonte *</InputLabel>
+                                <Select
+                                    value={tipoFonte}
+                                    label="Tipo de Fonte *"
+                                    onChange={e => setTipoFonte(e.target.value as TipoFonte)}
+                                >
+                                    {TIPO_FONTE_OPTIONS.map(opt => (
+                                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <FornecedorSelect
+                                value={fornecedorId}
+                                onChange={handleFornecedorChange}
+                                label="Fornecedor (Cadastrado)"
+                            />
+                        </Grid>
 
-                    <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Fonte / Fornecedor (Nome)</label>
-                        <input
-                            type="text" placeholder="Nome da Fonte"
-                            value={fonte} onChange={e => setFonte(e.target.value)}
-                            readOnly={!!fornecedorId}
-                            className={`w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary ${fornecedorId ? 'bg-gray-100 opacity-70 cursor-not-allowed' : ''}`} required
-                        />
-                    </div>
-                    <div className="md:col-span-1">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">CNPJ</label>
-                        <div className="relative">
-                            <input
-                                type="text" placeholder="00.000.000/0000-00"
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                                label="Fonte / Fornecedor (Nome)"
+                                fullWidth
+                                required
+                                value={fonte}
+                                onChange={e => setFonte(e.target.value)}
+                                disabled={!!fornecedorId}
+                                placeholder="Nome da Fonte"
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <TextField
+                                label="CNPJ"
+                                fullWidth
                                 value={cnpj}
                                 onChange={e => {
                                     if (fornecedorId) return;
-                                    const value = e.target.value;
-                                    setCnpj(value);
+                                    setCnpj(e.target.value);
                                     if (cnpjError) setCnpjError('');
                                 }}
                                 onBlur={() => {
@@ -390,81 +475,91 @@ export function PriceManager() {
                                         }
                                     }
                                 }}
-                                readOnly={!!fornecedorId}
-                                className={`w-full px-3 py-2 border rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary ${cnpjError
-                                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-                                    : cnpj && validateCNPJ(cnpj)
-                                        ? 'border-green-500'
-                                        : 'border-gray-300 dark:border-zinc-600'
-                                    } ${fornecedorId ? 'bg-gray-100 opacity-70 cursor-not-allowed' : ''}`}
+                                disabled={!!fornecedorId}
+                                error={!!cnpjError || (!!cnpj && !validateCNPJ(cnpj) && !fornecedorId)}
+                                helperText={cnpjError}
+                                InputProps={{
+                                    endAdornment: cnpj && (
+                                        <Box component="span" sx={{ fontSize: '1.2rem' }}>
+                                            {validateCNPJ(cnpj) ? '✅' : cnpj.replace(/[^\d]/g, '').length >= 14 ? '❌' : ''}
+                                        </Box>
+                                    )
+                                }}
                             />
-                            {cnpj && (
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-lg">
-                                    {validateCNPJ(cnpj) ? '✅' : cnpj.replace(/[^\d]/g, '').length >= 14 ? '❌' : ''}
-                                </span>
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 8 }}>
+                            <TextField
+                                label="Link do Edital / Fonte Pública"
+                                fullWidth
+                                type="url"
+                                value={linkFonte}
+                                onChange={e => setLinkFonte(e.target.value)}
+                                placeholder="https://exemplo.gov.br/edital/123"
+                            />
+                        </Grid>
+
+                        <Grid size={12}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                Anexos (Opcional)
+                                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                    PDF, JPG, PNG - Max 10MB cada, até 5 arquivos
+                                </Typography>
+                            </Typography>
+                            
+                            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileSelect}
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    multiple
+                                    style={{ display: 'none' }}
+                                />
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<AttachFileIcon />}
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    Selecionar Arquivos
+                                </Button>
+                                {selectedFiles.length === 0 && (
+                                    <Typography variant="caption" color="text.secondary">
+                                        Nenhum arquivo selecionado
+                                    </Typography>
+                                )}
+                            </Stack>
+
+                            {selectedFiles.length > 0 && (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                    {selectedFiles.map((file, index) => (
+                                        <Chip
+                                            key={index}
+                                            label={file.name}
+                                            onDelete={() => removeFile(index)}
+                                            icon={<DescriptionIcon />}
+                                            color="primary"
+                                            variant="outlined"
+                                        />
+                                    ))}
+                                </Box>
                             )}
-                        </div>
-                        {cnpjError && (
-                            <p className="text-red-500 text-xs mt-1">{cnpjError}</p>
-                        )}
-                    </div>
-                    <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Link do Edital / Fonte Pública</label>
-                        <input
-                            type="url" placeholder="https://exemplo.gov.br/edital/123"
-                            value={linkFonte} onChange={e => setLinkFonte(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white focus:ring-primary focus:border-primary"
-                        />
-                    </div>
-                    <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">
-                            Anexos (Opcional)
-                            <span className="text-gray-400 ml-2">PDF, JPG, PNG - Max 10MB cada, até 5 arquivos</span>
-                        </label>
-                        <div className="flex flex-wrap gap-2 items-center">
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileSelect}
-                                accept=".pdf,.jpg,.jpeg,.png"
-                                multiple
-                                className="hidden"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="bg-gray-200 hover:bg-gray-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded inline-flex items-center text-sm"
+                        </Grid>
+
+                        <Grid size={12} sx={{ display: 'flex', justifySelf: 'flex-end' }}>
+                            <Button
+                                type="submit"
+                                variant="contained"
+                                color="success"
+                                startIcon={<AddIcon />}
+                                size="large"
                             >
-                                📎 Selecionar Arquivos
-                            </button>
-                            {selectedFiles.length === 0 && (
-                                <span className="text-gray-400 text-xs">Nenhum arquivo selecionado</span>
-                            )}
-                        </div>
-                        {selectedFiles.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                                {selectedFiles.map((file, index) => (
-                                    <div key={index} className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs flex items-center gap-2">
-                                        📄 {file.name}
-                                        <button
-                                            type="button"
-                                            onClick={() => removeFile(index)}
-                                            className="text-red-500 hover:text-red-700 font-bold"
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    <div className="md:col-span-4 flex justify-end mt-2">
-                        <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors">
-                            Adicionar Cotação
-                        </button>
-                    </div>
-                </form>
-            </div>
+                                Adicionar Cotação
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Box>
+            </Paper>
 
             {/* Delete Confirmation Dialog */}
             <ConfirmDialog
@@ -479,73 +574,66 @@ export function PriceManager() {
             />
 
             {/* Edit Modal */}
-            {editingPrice && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 w-full max-w-lg mx-4 shadow-xl">
-                        <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100">Editar Cotação</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor Unitário (R$)</label>
-                                <input
-                                    type="number" step="0.01"
-                                    value={editValor} onChange={e => setEditValor(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fonte</label>
-                                <input
-                                    type="text"
-                                    value={editFonte} onChange={e => setEditFonte(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Fonte</label>
-                                <select
-                                    value={editTipoFonte} onChange={e => setEditTipoFonte(e.target.value as TipoFonte)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white"
-                                >
-                                    {TIPO_FONTE_OPTIONS.map(opt => (
-                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Link do Edital</label>
-                                <input
-                                    type="url"
-                                    value={editLinkFonte} onChange={e => setEditLinkFonte(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data da Coleta</label>
-                                <input
-                                    type="date"
-                                    value={editDataColeta} onChange={e => setEditDataColeta(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded dark:bg-zinc-700 dark:text-white"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex justify-end gap-3 mt-6">
-                            <button
-                                onClick={() => setEditingPrice(null)}
-                                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            <Dialog open={!!editingPrice} onClose={() => setEditingPrice(null)} maxWidth="sm" fullWidth>
+                <DialogTitle>Editar Cotação</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+                        <TextField
+                            label="Valor Unitário (R$)"
+                            type="number"
+                            fullWidth
+                            value={editValor}
+                            onChange={e => setEditValor(e.target.value)}
+                            inputProps={{ step: "0.01" }}
+                        />
+                        <TextField
+                            label="Fonte"
+                            fullWidth
+                            value={editFonte}
+                            onChange={e => setEditFonte(e.target.value)}
+                        />
+                        <FormControl fullWidth>
+                            <InputLabel>Tipo de Fonte</InputLabel>
+                            <Select
+                                value={editTipoFonte}
+                                label="Tipo de Fonte"
+                                onChange={e => setEditTipoFonte(e.target.value as TipoFonte)}
                             >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleSaveEdit}
-                                disabled={saving}
-                                className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded disabled:opacity-50"
-                            >
-                                {saving ? 'Salvando...' : 'Salvar'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+                                {TIPO_FONTE_OPTIONS.map(opt => (
+                                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <TextField
+                            label="Link do Edital"
+                            fullWidth
+                            type="url"
+                            value={editLinkFonte}
+                            onChange={e => setEditLinkFonte(e.target.value)}
+                        />
+                        <TextField
+                            label="Data da Coleta"
+                            type="date"
+                            fullWidth
+                            value={editDataColeta}
+                            onChange={e => setEditDataColeta(e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditingPrice(null)} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={handleSaveEdit}
+                        variant="contained"
+                        disabled={saving}
+                    >
+                        {saving ? 'Salvando...' : 'Salvar'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Container>
     );
 }

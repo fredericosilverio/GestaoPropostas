@@ -1,72 +1,121 @@
 import React, { useState } from 'react';
+import {
+  Container,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  Box,
+  Checkbox,
+  FormControlLabel,
+  Link,
+  CircularProgress,
+  useTheme
+} from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Login() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [isLoggingIn, setIsLoggingIn] = useState(false);
-    const { signIn } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { signIn } = useAuth();
+  const theme = useTheme();
 
-    async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        setError('');
-        setIsLoggingIn(true);
-        try {
-            await signIn(email, password);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoggingIn(false);
-        }
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setIsLoggingIn(true);
+    try {
+      await signIn(email, password);
+    } catch (err: any) {
+      setError(err.message || 'Falha ao fazer login');
+    } finally {
+      setIsLoggingIn(false);
     }
+  }
 
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-zinc-900">
-            <div className="max-w-md w-full bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-8">
-                <div className="text-center mb-8">
-                    <h1 className="text-2xl font-bold text-primary">Gestão Propostas</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Entre para acessar o sistema</p>
-                </div>
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: theme.palette.mode === 'light' 
+          ? 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+          : 'linear-gradient(135deg, #121212 0%, #2d3436 100%)',
+        p: 2
+      }}
+    >
+      <Container maxWidth="xs">
+        <Card elevation={4}>
+          <CardContent sx={{ p: 4 }}>
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Typography component="h1" variant="h4" color="primary" gutterBottom fontWeight="bold">
+                Gestão Propostas
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Entre para acessar o sistema
+              </Typography>
+            </Box>
 
-                {error && (
-                    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm text-center">
-                        {error}
-                    </div>
-                )}
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                        <input
-                            type="email"
-                            required
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
-                        <input
-                            type="password"
-                            required
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={isLoggingIn}
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
-                    >
-                        {isLoggingIn ? 'Entrando...' : 'Entrar'}
-                    </button>
-                </form>
-            </div>
-        </div>
-    );
+            <Box component="form" onSubmit={handleSubmit} noValidate>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="email"
+                label="Email"
+                name="email"
+                autoComplete="email"
+                autoFocus
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Senha"
+                type="password"
+                id="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                <FormControlLabel
+                  control={<Checkbox value="remember" color="primary" />}
+                  label="Lembrar-me"
+                />
+                <Link href="#" variant="body2" underline="hover">
+                  Esqueceu a senha?
+                </Link>
+              </Box>
+              
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3, mb: 2, py: 1.5 }}
+                disabled={isLoggingIn}
+              >
+                {isLoggingIn ? <CircularProgress size={24} color="inherit" /> : 'Entrar'}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
+  );
 }

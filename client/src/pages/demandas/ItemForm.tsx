@@ -2,6 +2,17 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
+import {
+    Box,
+    Button,
+    Container,
+    Grid,
+    Paper,
+    TextField,
+    Typography,
+    CircularProgress
+} from '@mui/material';
+import { Save as SaveIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 
 export function ItemForm() {
     const { demandaId } = useParams();
@@ -36,69 +47,78 @@ export function ItemForm() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto bg-white dark:bg-zinc-800 rounded-lg shadow p-8">
-            <h1 className="text-xl font-bold mb-6 text-gray-800 dark:text-gray-100">Novo Item</h1>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição</label>
-                    <input
-                        type="text"
-                        value={descricao}
-                        onChange={e => setDescricao(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100 focus:ring-primary focus:border-primary"
-                        required
-                    />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Unidade</label>
-                        <input
-                            type="text"
-                            value={unidade}
-                            onChange={e => setUnidade(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100 focus:ring-primary focus:border-primary"
-                            required
-                            placeholder="Ex: UN, KG, M"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Quantidade</label>
-                        <input
-                            type="number"
-                            value={quantidade}
-                            onChange={e => setQuantidade(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100 focus:ring-primary focus:border-primary"
-                            required
-                        />
-                    </div>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Elemento Despesa</label>
-                    <input
-                        type="text"
-                        value={elementoDespesa}
-                        onChange={e => setElementoDespesa(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm text-gray-900 dark:text-gray-100 focus:ring-primary focus:border-primary"
-                        required
-                    />
-                </div>
-                <div className="flex justify-end gap-3 pt-4">
-                    <button
-                        type="button"
-                        onClick={() => navigate(-1)}
-                        className="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-md transition-colors disabled:opacity-50"
-                    >
-                        {loading ? 'Salvando...' : 'Salvar'}
-                    </button>
-                </div>
-            </form>
-        </div>
+        <Container maxWidth="sm" sx={{ py: 4 }}>
+            <Paper elevation={2} sx={{ p: 4 }}>
+                <Typography variant="h5" component="h1" fontWeight="bold" gutterBottom>
+                    Novo Item
+                </Typography>
+                
+                <Box component="form" onSubmit={handleSubmit}>
+                    <Grid container spacing={3}>
+                        <Grid size={12}>
+                            <TextField
+                                fullWidth
+                                label="Descrição"
+                                value={descricao}
+                                onChange={e => setDescricao(e.target.value)}
+                                required
+                                multiline
+                                rows={2}
+                            />
+                        </Grid>
+                        
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            <TextField
+                                fullWidth
+                                label="Unidade"
+                                value={unidade}
+                                onChange={e => setUnidade(e.target.value)}
+                                required
+                                placeholder="Ex: UN, KG, M"
+                            />
+                        </Grid>
+                        
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            <TextField
+                                fullWidth
+                                label="Quantidade"
+                                type="number"
+                                value={quantidade}
+                                onChange={e => setQuantidade(e.target.value)}
+                                required
+                            />
+                        </Grid>
+                        
+                        <Grid size={12}>
+                            <TextField
+                                fullWidth
+                                label="Elemento Despesa"
+                                value={elementoDespesa}
+                                onChange={e => setElementoDespesa(e.target.value)}
+                                required
+                            />
+                        </Grid>
+                    </Grid>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => navigate(-1)}
+                            startIcon={<ArrowBackIcon />}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={loading}
+                            startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+                        >
+                            {loading ? 'Salvando...' : 'Salvar'}
+                        </Button>
+                    </Box>
+                </Box>
+            </Paper>
+        </Container>
     );
 }

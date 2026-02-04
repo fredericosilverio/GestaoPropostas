@@ -1,9 +1,48 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Button,
+  Card,
+  TextField,
+  Typography,
+  InputAdornment,
+  FormControlLabel,
+  Checkbox
+} from '@mui/material';
+import {
+  DataGrid,
+  GridActionsCellItem,
+  GridToolbarContainer,
+  GridToolbarExport,
+  GridToolbarColumnsButton,
+  GridToolbarFilterButton,
+  GridToolbarDensitySelector
+} from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
+import {
+  Add as AddIcon,
+  Search as SearchIcon,
+  Edit as EditIcon,
+  CheckCircle as CheckCircleIcon,
+  Block as BlockIcon
+} from '@mui/icons-material';
 import { api } from '../../services/api';
 import type { Fornecedor } from '../../types/api';
 import { useToast } from '../../contexts/ToastContext';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
+import { EmptyState } from '../../components/EmptyState';
+
+function CustomToolbar() {
+  return (
+    <GridToolbarContainer>
+      <GridToolbarColumnsButton />
+      <GridToolbarFilterButton />
+      <GridToolbarDensitySelector />
+      <GridToolbarExport />
+    </GridToolbarContainer>
+  );
+}
 
 export function FornecedorList() {
     const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
@@ -14,23 +53,15 @@ export function FornecedorList() {
     const { addToast } = useToast();
 
     useEffect(() => {
-        loadFornecedores();
+        const timer = setTimeout(() => {
+            loadFornecedores();
+        }, 500);
+        return () => clearTimeout(timer);
     }, [searchTerm, showOnlyActive]);
 
     async function loadFornecedores() {
         setLoading(true);
         try {
-            const params: any = { search: searchTerm };
-            if (showOnlyActive) {
-                params.ativo = true;
-            } else {
-                params.ativo = 'all'; // Adjusted backend logic to handle this if needed, or backend ignores if undefined.
-                // Re-checking controller: if 'ativo' is present it filters. If we want all, we should probably not send it or send undefined.
-                // My controller logic: `req.query.ativo === 'true' ? true : req.query.ativo === 'false' ? false : undefined`
-                // So if I want ALL, I should send nothing.
-            }
-
-            // Correction for ALL:
             const queryParams = new URLSearchParams();
             if (searchTerm) queryParams.append('search', searchTerm);
             if (showOnlyActive) queryParams.append('ativo', 'true');
@@ -55,112 +86,173 @@ export function FornecedorList() {
         }
     }
 
-    return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Fornecedores</h1>
-                <button
-                    onClick={() => navigate('/fornecedores/novo')}
-                    className="bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-md transition-colors"
+    const columns: GridColDef[] = [
+        {
+            field: 'razao_social',
+            headerName: 'Razão Social / Fantasia',
+            flex: 2,
+            minWidth: 200,
+            renderCell: (params) => (
+                <Box>
+                    <Typography variant="body2" fontWeight="medium">
+                        {params.row.razao_social}
+                    </Typography>
+                    {params.row.nome_fantasia && (
+                        <Typography variant="caption" color="text.secondary">
+                            {params.row.nome_fantasia}
+                        </Typography>
+                    )}
+                </Box>
+            )
+        },
+        {
+            field: 'cnpj',
+            headerName: 'CNPJ',
+            width: 150
+        },
+        {
+            field: 'contato',
+            headerName: 'Contato',
+            flex: 1,
+            minWidth: 200,
+            renderCell: (params) => (
+                <Box>
+                    <Typography variant="body2">
+                        {params.row.responsavel_legal}
+                    </Typography>
+                    <Typography variant="caption" display="block" color="text.secondary">
+                        {params.row.email_contato}
+                    </Typography>
+                    <Typography variant="caption" display="block" color="text.secondary">
+                        {params.row.telefone_contato}
+                    </Typography>
+                </Box>
+            )
+        },
+        {
+            field: 'ativo',
+            headerName: 'Status',
+            width: 100,
+            renderCell: (params) => (
+                <Box
+                    sx={{
+                        color: params.value ? 'success.main' : 'error.main',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5
+                    }}
                 >
-                    + Novo Fornecedor
-                </button>
-            </div>
+                    {params.value ? <CheckCircleIcon fontSize="small" /> : <BlockIcon fontSize="small" />}
+                    <Typography variant="body2">
+                        {params.value ? 'Ativo' : 'Inativo'}
+                    </Typography>
+                </Box>
+            )
+        },
+        {
+            field: 'actions',
+            type: 'actions',
+            headerName: 'Ações',
+            width: 100,
+            getActions: (params) => [
+                <GridActionsCellItem
+                    icon={<EditIcon />}
+                    label="Editar"
+                    onClick={() => navigate(`/fornecedores/${params.id}`)}
+                    showInMenu={false}
+                />,
+                <GridActionsCellItem
+                    icon={params.row.ativo ? <BlockIcon color="error" /> : <CheckCircleIcon color="success" />}
+                    label={params.row.ativo ? 'Desativar' : 'Ativar'}
+                    onClick={() => handleToggleStatus(Number(params.id))}
+                    showInMenu={false}
+                />
+            ]
+        }
+    ];
 
-            <div className="flex gap-4 items-center bg-white dark:bg-zinc-800 p-4 rounded-lg shadow">
-                <div className="flex-1">
-                    <input
-                        type="text"
+    if (loading && fornecedores.length === 0) return <LoadingOverlay message="Carregando fornecedores..." />;
+
+    return (
+        <Box sx={{ height: '100%', width: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h4" component="h1" fontWeight="bold">
+                    Fornecedores
+                </Typography>
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => navigate('/fornecedores/novo')}
+                >
+                    Novo Fornecedor
+                </Button>
+            </Box>
+
+            <Card sx={{ mb: 3, p: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <TextField
+                        fullWidth
+                        variant="outlined"
                         placeholder="Buscar por Razão Social, CNPJ ou Nome Fantasia..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-2 border rounded-md dark:bg-zinc-700 dark:border-zinc-600 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon color="action" />
+                                </InputAdornment>
+                            ),
+                        }}
+                        size="small"
                     />
-                </div>
-                <div className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        id="showOnlyActive"
-                        checked={showOnlyActive}
-                        onChange={(e) => setShowOnlyActive(e.target.checked)}
-                        className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={showOnlyActive}
+                                onChange={(e) => setShowOnlyActive(e.target.checked)}
+                                color="primary"
+                            />
+                        }
+                        label="Apenas Ativos"
+                        sx={{ whiteSpace: 'nowrap' }}
                     />
-                    <label htmlFor="showOnlyActive" className="text-sm text-gray-700 dark:text-gray-300">
-                        Apenas Ativos
-                    </label>
-                </div>
-            </div>
+                </Box>
+            </Card>
 
-            {loading ? (
-                <div className="flex justify-center py-12">
-                    <LoadingOverlay message="Carregando..." />
-                </div>
+            {fornecedores.length === 0 && !searchTerm && showOnlyActive ? (
+                <EmptyState
+                    title="Nenhum fornecedor encontrado"
+                    description="Comece cadastrando seu primeiro fornecedor."
+                    action={{
+                        label: 'Novo Fornecedor',
+                        onClick: () => navigate('/fornecedores/novo')
+                    }}
+                />
             ) : (
-                <div className="bg-white dark:bg-zinc-800 shadow rounded-lg overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-                        <thead className="bg-gray-50 dark:bg-zinc-700/50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Razão Social / Fantasia</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CNPJ</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contato</th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
-                            {fornecedores.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                        Nenhum fornecedor encontrado.
-                                    </td>
-                                </tr>
-                            ) : (
-                                fornecedores.map((fornecedor) => (
-                                    <tr key={fornecedor.id} className="hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{fornecedor.razao_social}</div>
-                                            {fornecedor.nome_fantasia && (
-                                                <div className="text-sm text-gray-500 dark:text-gray-400">{fornecedor.nome_fantasia}</div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {fornecedor.cnpj}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                                            <div>{fornecedor.responsavel_legal}</div>
-                                            <div className="text-xs">{fornecedor.email_contato}</div>
-                                            <div className="text-xs">{fornecedor.telefone_contato}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${fornecedor.ativo ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                                {fornecedor.ativo ? 'Ativo' : 'Inativo'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex justify-end gap-3">
-                                                <button
-                                                    onClick={() => navigate(`/fornecedores/${fornecedor.id}`)}
-                                                    className="text-primary hover:text-primary-dark"
-                                                    title="Editar"
-                                                >
-                                                    ✏️
-                                                </button>
-                                                <button
-                                                    onClick={() => handleToggleStatus(fornecedor.id)}
-                                                    className={`${fornecedor.ativo ? 'text-red-600 hover:text-red-800' : 'text-green-600 hover:text-green-800'}`}
-                                                    title={fornecedor.ativo ? 'Desativar' : 'Ativar'}
-                                                >
-                                                    {fornecedor.ativo ? '🚫' : '✅'}
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                <Card sx={{ height: 600, width: '100%' }}>
+                    <DataGrid
+                        rows={fornecedores}
+                        columns={columns}
+                        initialState={{
+                            pagination: {
+                                paginationModel: { page: 0, pageSize: 10 },
+                            },
+                        }}
+                        pageSizeOptions={[5, 10, 25]}
+                        disableRowSelectionOnClick
+                        slots={{
+                            toolbar: CustomToolbar,
+                        }}
+                        sx={{
+                            border: 0,
+                            '& .MuiDataGrid-cell:focus': {
+                                outline: 'none',
+                            },
+                        }}
+                        getRowHeight={() => 'auto'}
+                    />
+                </Card>
             )}
-        </div>
+        </Box>
     );
 }

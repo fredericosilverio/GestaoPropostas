@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
+import { 
+    Box, 
+    Paper, 
+    Typography, 
+    Grid, 
+    Skeleton,
+    Divider
+} from '@mui/material';
 
 interface StatisticsData {
     totalDemandas: number;
@@ -64,9 +72,9 @@ export function PcaSummary({ filterAno, filterSituacao, pcaId }: PcaSummaryProps
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-6 animate-pulse">
-                <div className="h-24 bg-gray-200 dark:bg-zinc-700 rounded"></div>
-            </div>
+            <Paper sx={{ p: 2, height: 128 }}>
+                <Skeleton variant="rectangular" height="100%" />
+            </Paper>
         );
     }
 
@@ -88,81 +96,102 @@ export function PcaSummary({ filterAno, filterSituacao, pcaId }: PcaSummaryProps
         }
     };
 
-    // Filtrar tipos com valores
-    const tiposComValor = Object.entries(displayStats.porTipoContratacao)
-        .filter(([_, data]) => data.count > 0 || data.total > 0);
-
-    const naturezasComValor = Object.entries(displayStats.porNaturezaDespesa)
-        .filter(([_, data]) => data.count > 0 || data.total > 0);
-
     return (
-        <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 overflow-hidden">
-            <div className="flex flex-col lg:flex-row">
+        <Paper elevation={0} variant="outlined" sx={{ overflow: 'hidden' }}>
+            <Grid container>
                 {/* Card grande - Total de demandas */}
-                <div className="bg-primary p-6 flex items-center justify-center lg:min-w-[180px]">
-                    <div className="text-center text-white">
-                        <div className="text-5xl font-bold">{displayStats.totalDemandas}</div>
-                        <div className="text-sm uppercase tracking-wider mt-1">Demandas</div>
-                        <div className="text-sm uppercase tracking-wider">Propostas</div>
-                    </div>
-                </div>
+                <Grid size={{ xs: 12, lg: 2 }}>
+                    <Box sx={{ 
+                        bgcolor: 'primary.main', 
+                        color: 'primary.contrastText',
+                        p: 3,
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: { xs: 150, lg: 'auto' }
+                    }}>
+                        <Typography variant="h3" component="div" fontWeight="bold">
+                            {displayStats.totalDemandas}
+                        </Typography>
+                        <Typography variant="subtitle2" sx={{ opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1, mt: 1 }}>
+                            Demandas
+                        </Typography>
+                        <Typography variant="subtitle2" sx={{ opacity: 0.9, textTransform: 'uppercase', letterSpacing: 1 }}>
+                            Propostas
+                        </Typography>
+                    </Box>
+                </Grid>
 
                 {/* Resumo por tipo de contratação */}
-                <div className="flex-1 p-4 border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-zinc-700">
-                    <div className="space-y-1">
-                        {tiposComValor.length > 0 ? (
-                            <>
-                                {Object.entries(displayStats.porTipoContratacao).map(([tipo, data]) => (
-                                    <div key={tipo} className="flex justify-between text-sm">
-                                        <span className="text-gray-600 dark:text-gray-400">
-                                            {TIPO_CONTRATACAO_LABELS[tipo] || tipo}: <strong className="text-gray-800 dark:text-gray-200">{data.count}</strong>
-                                        </span>
-                                        <span className="text-gray-800 dark:text-gray-200 font-medium tabular-nums">
-                                            {formatCurrency(data.total)}
-                                        </span>
-                                    </div>
-                                ))}
-                                <div className="flex justify-between text-sm pt-2 border-t border-gray-200 dark:border-zinc-600 mt-2">
-                                    <span className="font-semibold text-gray-800 dark:text-gray-200">Total:</span>
-                                    <span className="font-bold text-gray-900 dark:text-gray-100 tabular-nums">
-                                        {formatCurrency(displayStats.valorTotalGeral)}
-                                    </span>
-                                </div>
-                            </>
-                        ) : (
-                            <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhum dado disponível</p>
-                        )}
-                    </div>
-                </div>
+                <Grid size={{ xs: 12, md: 6, lg: 5 }} sx={{ borderRight: { lg: 1 }, borderBottom: { xs: 1, lg: 0 }, borderColor: 'divider' }}>
+                    <Box sx={{ p: 2 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            {Object.entries(displayStats.porTipoContratacao).some(([_, data]) => data.count > 0 || data.total > 0) ? (
+                                <>
+                                    {Object.entries(displayStats.porTipoContratacao).map(([tipo, data]) => {
+                                        if (data.count === 0 && data.total === 0) return null;
+                                        return (
+                                            <Box key={tipo} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {TIPO_CONTRATACAO_LABELS[tipo] || tipo}: <Box component="span" fontWeight="bold" color="text.primary">{data.count}</Box>
+                                                </Typography>
+                                                <Typography variant="body2" fontWeight={500}>
+                                                    {formatCurrency(data.total)}
+                                                </Typography>
+                                            </Box>
+                                        );
+                                    })}
+                                    <Divider sx={{ my: 1 }} />
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Typography variant="body2" fontWeight="bold">Total:</Typography>
+                                        <Typography variant="body2" fontWeight="bold">
+                                            {formatCurrency(displayStats.valorTotalGeral)}
+                                        </Typography>
+                                    </Box>
+                                </>
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">Nenhum dado disponível</Typography>
+                            )}
+                        </Box>
+                    </Box>
+                </Grid>
 
                 {/* Resumo por natureza de despesa */}
-                <div className="flex-1 p-4">
-                    <div className="space-y-1">
-                        {naturezasComValor.length > 0 ? (
-                            <>
-                                {Object.entries(displayStats.porNaturezaDespesa).map(([natureza, data]) => (
-                                    <div key={natureza} className="flex justify-between text-sm">
-                                        <span className="text-gray-600 dark:text-gray-400">
-                                            {NATUREZA_LABELS[natureza] || natureza}: <strong className="text-gray-800 dark:text-gray-200">{data.count}</strong>
-                                        </span>
-                                        <span className="text-gray-800 dark:text-gray-200 font-medium tabular-nums">
-                                            {formatCurrency(data.total)}
-                                        </span>
-                                    </div>
-                                ))}
-                                <div className="flex justify-between text-sm pt-2 border-t border-gray-200 dark:border-zinc-600 mt-2">
-                                    <span className="font-semibold text-gray-800 dark:text-gray-200">Total:</span>
-                                    <span className="font-bold text-gray-900 dark:text-gray-100 tabular-nums">
-                                        {formatCurrency(displayStats.valorTotalGeral)}
-                                    </span>
-                                </div>
-                            </>
-                        ) : (
-                            <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhum dado disponível</p>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
+                <Grid size={{ xs: 12, md: 6, lg: 5 }}>
+                    <Box sx={{ p: 2 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            {Object.entries(displayStats.porNaturezaDespesa).some(([_, data]) => data.count > 0 || data.total > 0) ? (
+                                <>
+                                    {Object.entries(displayStats.porNaturezaDespesa).map(([natureza, data]) => {
+                                        if (data.count === 0 && data.total === 0) return null;
+                                        return (
+                                            <Box key={natureza} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {NATUREZA_LABELS[natureza] || natureza}: <Box component="span" fontWeight="bold" color="text.primary">{data.count}</Box>
+                                                </Typography>
+                                                <Typography variant="body2" fontWeight={500}>
+                                                    {formatCurrency(data.total)}
+                                                </Typography>
+                                            </Box>
+                                        );
+                                    })}
+                                    <Divider sx={{ my: 1 }} />
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Typography variant="body2" fontWeight="bold">Total:</Typography>
+                                        <Typography variant="body2" fontWeight="bold">
+                                            {formatCurrency(displayStats.valorTotalGeral)}
+                                        </Typography>
+                                    </Box>
+                                </>
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">Nenhum dado disponível</Typography>
+                            )}
+                        </Box>
+                    </Box>
+                </Grid>
+            </Grid>
+        </Paper>
     );
 }

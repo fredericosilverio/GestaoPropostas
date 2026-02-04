@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { Alert, AlertTitle, Box, Slide } from '@mui/material';
 
 interface ToastMessage {
     id: string;
@@ -36,7 +37,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         setMessages((state) => [...state, toast]);
 
-        // Auto remove after 3 seconds
+        // Auto remove after 4 seconds
         setTimeout(() => {
             setMessages((state) => state.filter((message) => message.id !== id));
         }, 4000);
@@ -57,44 +58,34 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 // Internal Components
 function ToastContainer({ messages, removeToast }: { messages: ToastMessage[], removeToast: (id: string) => void }) {
     return (
-        <div className="fixed right-0 top-0 p-4 pt-20 overflow-hidden z-50 pointer-events-none flex flex-col gap-2">
-            {messages.map((message) => (
-                <Toast key={message.id} message={message} removeToast={removeToast} />
-            ))}
-        </div>
-    );
-}
-
-function Toast({ message, removeToast }: { message: ToastMessage, removeToast: (id: string) => void }) {
-    const bgColors = {
-        success: 'bg-green-100 dark:bg-green-900 border-green-500',
-        error: 'bg-red-100 dark:bg-red-900 border-red-500',
-        info: 'bg-blue-100 dark:bg-blue-900 border-blue-500',
-    };
-
-    const textColors = {
-        success: 'text-green-800 dark:text-green-100',
-        error: 'text-red-800 dark:text-red-100',
-        info: 'text-blue-800 dark:text-blue-100',
-    };
-
-    return (
-        <div
-            className={`w-80 shadow-lg rounded-md border-l-4 p-4 pointer-events-auto transition-transform transform translate-x-0 ${bgColors[message.type]}`}
-            onClick={() => removeToast(message.id)}
+        <Box
+            sx={{
+                position: 'fixed',
+                top: 80, 
+                right: 24,
+                zIndex: 2000,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1,
+                pointerEvents: 'none',
+                maxWidth: 400
+            }}
         >
-            <div className="flex items-start">
-                <div className="flex-1">
-                    {message.title && <h3 className={`font-bold ${textColors[message.type]}`}>{message.title}</h3>}
-                    {message.description && <p className={`mt-1 text-sm ${textColors[message.type]} opacity-90`}>{message.description}</p>}
-                </div>
-                <button
-                    onClick={() => removeToast(message.id)}
-                    className={`ml-4 ${textColors[message.type]} hover:opacity-70`}
-                >
-                    X
-                </button>
-            </div>
-        </div>
+            {messages.map((message) => (
+                <Box key={message.id} sx={{ pointerEvents: 'auto' }}>
+                    <Slide direction="left" in mountOnEnter unmountOnExit>
+                        <Alert
+                            severity={message.type}
+                            variant="filled"
+                            onClose={() => removeToast(message.id)}
+                            sx={{ width: '100%', boxShadow: 3 }}
+                        >
+                            {message.title && <AlertTitle>{message.title}</AlertTitle>}
+                            {message.description}
+                        </Alert>
+                    </Slide>
+                </Box>
+            ))}
+        </Box>
     );
 }

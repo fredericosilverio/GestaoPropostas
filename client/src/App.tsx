@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Box } from '@mui/material';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -28,9 +29,9 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-100 dark:bg-zinc-900">
+      <Box sx={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
         <LoadingOverlay message="Verificando autenticação..." />
-      </div>
+      </Box>
     );
   }
 
@@ -42,9 +43,9 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-100 dark:bg-zinc-900">
+      <Box sx={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
         <LoadingOverlay message="Carregando..." />
-      </div>
+      </Box>
     );
   }
 
@@ -99,11 +100,14 @@ export default function App() {
 
               {/* Fornecedores */}
               <Route path="/fornecedores" element={<PrivateLayout><FornecedorList /></PrivateLayout>} />
-              <Route path="/fornecedores/novo" element={<PrivateLayout><FornecedorForm /></PrivateLayout>} />
+              <Route path="/fornecedores/new" element={<PrivateLayout><FornecedorForm /></PrivateLayout>} />
               <Route path="/fornecedores/:id" element={<PrivateLayout><FornecedorForm /></PrivateLayout>} />
 
               {/* Admin */}
               <Route path="/audit" element={<PrivateLayout><AuditPage /></PrivateLayout>} />
+
+              {/* Catch all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
         </ToastProvider>

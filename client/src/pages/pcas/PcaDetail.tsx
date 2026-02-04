@@ -4,9 +4,40 @@ import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
 import { StatusBadge } from '../../components/StatusBadge';
-import { Modal } from '../../components/Modal';
 import { PcaSummary } from '../../components/pca/PcaSummary';
 import type { Pca, Demanda } from '../../types/api';
+import { 
+    Box, 
+    Paper, 
+    Typography, 
+    Button, 
+    Grid, 
+    Container,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
+    TextField,
+    Alert,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Chip,
+    Divider
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DeleteIcon from '@mui/icons-material/Delete';
+import WarningIcon from '@mui/icons-material/Warning';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import AddIcon from '@mui/icons-material/Add';
+import DescriptionIcon from '@mui/icons-material/Description';
+import HistoryIcon from '@mui/icons-material/History';
+import PauseCircleIcon from '@mui/icons-material/PauseCircle';
 
 interface PcaWithDetails extends Pca {
     demandas: (Demanda & { _count?: { itens: number } })[];
@@ -131,12 +162,15 @@ export function PcaDetail() {
     if (loading) return <LoadingOverlay message="Carregando PCA..." />;
     if (error && !pca) {
         return (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                {error}
-                <button onClick={() => navigate('/pcas')} className="ml-4 underline">
-                    Voltar para lista
-                </button>
-            </div>
+            <Container maxWidth="lg" sx={{ mt: 4 }}>
+                <Alert severity="error" action={
+                    <Button color="inherit" size="small" onClick={() => navigate('/pcas')}>
+                        Voltar para lista
+                    </Button>
+                }>
+                    {error}
+                </Alert>
+            </Container>
         );
     }
     if (!pca) return null;
@@ -147,530 +181,615 @@ export function PcaDetail() {
 
 
     const DetailItem = ({ label, value, subValue }: { label: string; value: string | undefined | null; subValue?: string }) => (
-        <div className="mb-4">
-            <dt className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</dt>
-            <dd className="text-gray-900 dark:text-gray-100 mt-1">{value || '-'}</dd>
-            {subValue && <dd className="text-xs text-gray-500 dark:text-gray-400">{subValue}</dd>}
-        </div>
+        <Box sx={{ mb: 2 }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={500} display="block">
+                {label}
+            </Typography>
+            <Typography variant="body1" color="text.primary">
+                {value || '-'}
+            </Typography>
+            {subValue && (
+                <Typography variant="caption" color="text.secondary" display="block">
+                    {subValue}
+                </Typography>
+            )}
+        </Box>
     );
 
     return (
-        <div className="space-y-6">
+        <Container maxWidth="xl" sx={{ py: 3 }}>
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+            <Box sx={{ 
+                mb: 4, 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' }, 
+                justifyContent: 'space-between', 
+                alignItems: { sm: 'center' }, 
+                gap: 2,
+                bgcolor: 'background.paper',
+                p: 3,
+                borderRadius: 1,
+                boxShadow: 1
+            }}>
+                <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                        <Typography variant="h4" component="h1" fontWeight="bold">
                             {pca.numero_pca}
-                        </h1>
+                        </Typography>
                         <StatusBadge status={pca.situacao} />
                         {pca.versao > 1 && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded text-sm">
-                                v{pca.versao}
-                            </span>
+                            <Chip 
+                                label={`v${pca.versao}`} 
+                                size="small" 
+                                color="primary" 
+                                variant="outlined" 
+                            />
                         )}
-                    </div>
+                    </Box>
                     {pca.denominacao && (
-                        <p className="text-lg text-gray-700 dark:text-gray-300 mt-2 font-medium">
+                        <Typography variant="h6" color="text.secondary" gutterBottom>
                             {pca.denominacao}
-                        </p>
+                        </Typography>
                     )}
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
+                    <Typography variant="body2" color="text.secondary">
                         {pca.orgao} • Ano {pca.ano}
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <button
+                    </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                        startIcon={<ArrowBackIcon />}
                         onClick={() => navigate('/pcas')}
-                        className="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
+                        variant="outlined"
+                        color="inherit"
                     >
-                        ← Voltar
-                    </button>
+                        Voltar
+                    </Button>
                     {canEdit && !isReadOnly && (
-                        <button
+                        <Button
+                            startIcon={<EditIcon />}
                             onClick={() => navigate(`/pcas/${id}/edit`)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 transition-colors"
+                            variant="contained"
+                            color="primary"
                         >
-                            ✏️ Editar
-                        </button>
+                            Editar
+                        </Button>
                     )}
-                </div>
-            </div>
+                </Box>
+            </Box>
 
             {/* Stats Overview */}
-            {/* Resumo Financeiro e Estatístico */}
-            <PcaSummary pcaId={pca.id} />
+            <Box sx={{ mb: 4 }}>
+                <PcaSummary pcaId={pca.id} />
+            </Box>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Vigência</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-2">
-                        {pca.periodo_vigencia_inicio ? new Date(pca.periodo_vigencia_inicio).toLocaleDateString('pt-BR') : '-'}
-                        {' até '}
-                        {pca.periodo_vigencia_fim ? new Date(pca.periodo_vigencia_fim).toLocaleDateString('pt-BR') : '-'}
-                    </p>
-                </div>
-                <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Última Atualização</p>
-                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mt-2">
-                        {new Date(pca.updated_at).toLocaleDateString('pt-BR')}
-                    </p>
-                </div>
-            </div>
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2 }}>
+                        <Typography variant="caption" color="text.secondary">Vigência</Typography>
+                        <Typography variant="h6" sx={{ mt: 1 }}>
+                            {pca.periodo_vigencia_inicio ? new Date(pca.periodo_vigencia_inicio).toLocaleDateString('pt-BR') : '-'}
+                            {' até '}
+                            {pca.periodo_vigencia_fim ? new Date(pca.periodo_vigencia_fim).toLocaleDateString('pt-BR') : '-'}
+                        </Typography>
+                    </Paper>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <Paper sx={{ p: 2 }}>
+                        <Typography variant="caption" color="text.secondary">Última Atualização</Typography>
+                        <Typography variant="h6" sx={{ mt: 1 }}>
+                            {new Date(pca.updated_at).toLocaleDateString('pt-BR')}
+                        </Typography>
+                    </Paper>
+                </Grid>
+            </Grid>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Grid container spacing={3}>
                 {/* Left Column: Details */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Informações Institucionais e Responsáveis */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Grid size={{ xs: 12, lg: 8 }}>
+                    <Grid container spacing={3}>
                         {/* Vinculação Institucional */}
-                        <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-6 h-full">
-                            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                                🏛️ Vinculação Institucional
-                            </h2>
-                            <dl>
-                                <DetailItem label="Unidade Demandante" value={pca.unidade_demandante} />
-                                <DetailItem label="Área Técnica" value={pca.area_tecnica} />
-                                <DetailItem label="Órgão" value={pca.orgao} />
-                            </dl>
-                        </div>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <Paper sx={{ p: 3, height: '100%' }}>
+                                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Box component="span" role="img" aria-label="institucional">🏛️</Box> Vinculação Institucional
+                                </Typography>
+                                <Box sx={{ mt: 2 }}>
+                                    <DetailItem label="Unidade Demandante" value={pca.unidade_demandante} />
+                                    <DetailItem label="Área Técnica" value={pca.area_tecnica} />
+                                    <DetailItem label="Órgão" value={pca.orgao} />
+                                </Box>
+                            </Paper>
+                        </Grid>
 
                         {/* Responsáveis */}
-                        <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-6 h-full">
-                            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                                👤 Responsáveis
-                            </h2>
-                            <dl>
-                                <DetailItem
-                                    label="Elaboração"
-                                    value={pca.responsavel?.nome_completo}
-                                    subValue={pca.responsavel?.email}
-                                />
-                                <DetailItem
-                                    label="Consolidação / Gestão"
-                                    value={pca.responsavel_consolidacao?.nome_completo}
-                                    subValue={pca.responsavel_consolidacao?.email}
-                                />
-                                {(pca.contato_email || pca.contato_telefone) && (
-                                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-700">
-                                        <dt className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-2">Contatos Adicionais</dt>
-                                        {pca.contato_email && <dd className="text-sm text-gray-900 dark:text-gray-100">📧 {pca.contato_email}</dd>}
-                                        {pca.contato_telefone && <dd className="text-sm text-gray-900 dark:text-gray-100">📞 {pca.contato_telefone}</dd>}
-                                    </div>
-                                )}
-                            </dl>
-                        </div>
-                    </div>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <Paper sx={{ p: 3, height: '100%' }}>
+                                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Box component="span" role="img" aria-label="responsaveis">👤</Box> Responsáveis
+                                </Typography>
+                                <Box sx={{ mt: 2 }}>
+                                    <DetailItem
+                                        label="Elaboração"
+                                        value={pca.responsavel?.nome_completo}
+                                        subValue={pca.responsavel?.email}
+                                    />
+                                    <DetailItem
+                                        label="Consolidação / Gestão"
+                                        value={pca.responsavel_consolidacao?.nome_completo}
+                                        subValue={pca.responsavel_consolidacao?.email}
+                                    />
+                                    {(pca.contato_email || pca.contato_telefone) && (
+                                        <>
+                                            <Divider sx={{ my: 2 }} />
+                                            <Typography variant="caption" color="text.secondary" fontWeight={500} display="block" gutterBottom>
+                                                Contatos Adicionais
+                                            </Typography>
+                                            {pca.contato_email && (
+                                                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    📧 {pca.contato_email}
+                                                </Typography>
+                                            )}
+                                            {pca.contato_telefone && (
+                                                <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                                    📞 {pca.contato_telefone}
+                                                </Typography>
+                                            )}
+                                        </>
+                                    )}
+                                </Box>
+                            </Paper>
+                        </Grid>
 
-                    {/* Aprovação */}
-                    <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-6">
-                        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            ✅ Dados da Aprovação
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <DetailItem label="Autoridade" value={pca.autoridade_aprovadora} />
-                            <DetailItem label="Cargo" value={pca.cargo_autoridade} />
-                            <DetailItem label="Documento" value={pca.documento_aprovacao} />
-                            <DetailItem
-                                label="Data Aprovação"
-                                value={pca.data_aprovacao ? new Date(pca.data_aprovacao).toLocaleDateString('pt-BR') : null}
-                            />
-                        </div>
-                    </div>
+                        {/* Aprovação */}
+                        <Grid size={12}>
+                            <Paper sx={{ p: 3 }}>
+                                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <CheckCircleIcon color="success" /> Dados da Aprovação
+                                </Typography>
+                                <Grid container spacing={2} sx={{ mt: 1 }}>
+                                    <Grid size={{ xs: 12, md: 6, lg: 3 }}>
+                                        <DetailItem label="Autoridade" value={pca.autoridade_aprovadora} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, md: 6, lg: 3 }}>
+                                        <DetailItem label="Cargo" value={pca.cargo_autoridade} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, md: 6, lg: 3 }}>
+                                        <DetailItem label="Documento" value={pca.documento_aprovacao} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, md: 6, lg: 3 }}>
+                                        <DetailItem
+                                            label="Data Aprovação"
+                                            value={pca.data_aprovacao ? new Date(pca.data_aprovacao).toLocaleDateString('pt-BR') : null}
+                                        />
+                                    </Grid>
+                                </Grid>
+                            </Paper>
+                        </Grid>
 
-                    {/* Observações e Histórico */}
-                    {(pca.observacoes || pca.historico_alteracoes) && (
-                        <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-6">
-                            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                                📝 Notas
-                            </h2>
-                            <div className="grid grid-cols-1 gap-6">
-                                {pca.observacoes && (
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observações Gerais</h3>
-                                        <p className="text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-zinc-700/50 p-3 rounded-md whitespace-pre-wrap">
-                                            {pca.observacoes}
-                                        </p>
-                                    </div>
-                                )}
-                                {pca.historico_alteracoes && (
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Histórico de Alterações</h3>
-                                        <p className="text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-zinc-700/50 p-3 rounded-md whitespace-pre-wrap">
-                                            {pca.historico_alteracoes}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Actions Card */}
-                    {canEdit && !isReadOnly && (
-                        <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-6">
-                            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
-                                Ações do Workflow
-                            </h2>
-                            <div className="flex flex-wrap gap-3">
-                                {statusInfo.nextStatus && (
-                                    <button
-                                        onClick={() => setShowStatusModal(true)}
-                                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors shadow-sm"
-                                    >
-                                        ✓ {statusInfo.nextLabel}
-                                    </button>
-                                )}
-                                {(pca.situacao === 'APROVADO' || pca.situacao === 'EM_EXECUCAO') && (
-                                    <button
-                                        onClick={() => setShowVersionModal(true)}
-                                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors shadow-sm"
-                                    >
-                                        📋 Nova Versão
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => setShowCancelModal(true)}
-                                    className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors shadow-sm"
-                                >
-                                    ⏸️ Cancelar PCA
-                                </button>
-                                {totalDemandas === 0 && (
-                                    <button
-                                        onClick={() => setShowDeleteModal(true)}
-                                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors shadow-sm"
-                                    >
-                                        🗑️ Excluir PCA
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Demandas Table */}
-                    <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                                Demandas Vinculadas
-                            </h2>
-                            {canEdit && !isReadOnly && (
-                                <Link
-                                    to={`/demandas/new?pca_id=${id}`}
-                                    className="px-3 py-1 bg-primary text-white rounded-md text-sm hover:bg-primary-light transition-colors shadow-sm"
-                                >
-                                    + Nova Demanda
-                                </Link>
-                            )}
-                        </div>
-                        {pca.demandas && pca.demandas.length > 0 ? (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-                                    <thead className="bg-gray-50 dark:bg-zinc-700/50">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                Código
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                Descrição
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                                Itens
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200 dark:divide-zinc-700 bg-white dark:bg-zinc-800">
-                                        {pca.demandas.map((demanda) => (
-                                            <tr
-                                                key={demanda.id}
-                                                onClick={() => navigate(`/demandas/${demanda.id}`)}
-                                                className="hover:bg-gray-50 dark:hover:bg-zinc-700 cursor-pointer transition-colors"
-                                            >
-                                                <td className="px-4 py-3 text-sm font-mono text-primary font-medium">
-                                                    {demanda.codigo_demanda}
-                                                </td>
-                                                <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 truncate max-w-xs">
-                                                    {demanda.descricao}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <StatusBadge status={demanda.status} />
-                                                </td>
-                                                <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                                                    {demanda._count?.itens || 0}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 bg-gray-50 dark:bg-zinc-700/30 rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-600">
-                                <p className="text-gray-500 dark:text-gray-400">
-                                    Nenhuma demanda cadastrada neste PCA.
-                                </p>
-                                {canEdit && !isReadOnly && (
-                                    <Link
-                                        to={`/demandas/new?pca_id=${id}`}
-                                        className="mt-2 inline-block text-primary hover:underline font-medium"
-                                    >
-                                        Cadastrar primeira demanda
-                                    </Link>
-                                )}
-                            </div>
+                        {/* Observações e Histórico */}
+                        {(pca.observacoes || pca.historico_alteracoes) && (
+                            <Grid size={12}>
+                                <Paper sx={{ p: 3 }}>
+                                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <DescriptionIcon color="action" /> Notas
+                                    </Typography>
+                                    <Grid container spacing={3} sx={{ mt: 1 }}>
+                                        {pca.observacoes && (
+                                            <Grid size={12}>
+                                                <Typography variant="subtitle2" gutterBottom>Observações Gerais</Typography>
+                                                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+                                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                                                        {pca.observacoes}
+                                                    </Typography>
+                                                </Paper>
+                                            </Grid>
+                                        )}
+                                        {pca.historico_alteracoes && (
+                                            <Grid size={12}>
+                                                <Typography variant="subtitle2" gutterBottom>Histórico de Alterações</Typography>
+                                                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+                                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                                                        {pca.historico_alteracoes}
+                                                    </Typography>
+                                                </Paper>
+                                            </Grid>
+                                        )}
+                                    </Grid>
+                                </Paper>
+                            </Grid>
                         )}
-                    </div>
-                </div>
+
+                        {/* Actions Card */}
+                        {canEdit && !isReadOnly && (
+                            <Grid size={12}>
+                                <Paper sx={{ p: 3 }}>
+                                    <Typography variant="h6" gutterBottom>
+                                        Ações do Workflow
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2 }}>
+                                        {statusInfo.nextStatus && (
+                                            <Button
+                                                variant="contained"
+                                                color="success"
+                                                startIcon={<CheckCircleIcon />}
+                                                onClick={() => setShowStatusModal(true)}
+                                            >
+                                                {statusInfo.nextLabel}
+                                            </Button>
+                                        )}
+                                        {(pca.situacao === 'APROVADO' || pca.situacao === 'EM_EXECUCAO') && (
+                                            <Button
+                                                variant="contained"
+                                                color="secondary"
+                                                startIcon={<AddIcon />}
+                                                onClick={() => setShowVersionModal(true)}
+                                            >
+                                                Nova Versão
+                                            </Button>
+                                        )}
+                                        <Button
+                                            variant="contained"
+                                            color="warning"
+                                            startIcon={<PauseCircleIcon />}
+                                            onClick={() => setShowCancelModal(true)}
+                                        >
+                                            Cancelar PCA
+                                        </Button>
+                                        {totalDemandas === 0 && (
+                                            <Button
+                                                variant="contained"
+                                                color="error"
+                                                startIcon={<DeleteIcon />}
+                                                onClick={() => setShowDeleteModal(true)}
+                                            >
+                                                Excluir PCA
+                                            </Button>
+                                        )}
+                                    </Box>
+                                </Paper>
+                            </Grid>
+                        )}
+
+                        {/* Demandas Table */}
+                        <Grid size={12}>
+                            <Paper sx={{ p: 3 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                                    <Typography variant="h6">
+                                        Demandas Vinculadas
+                                    </Typography>
+                                    {canEdit && !isReadOnly && (
+                                        <Button
+                                            component={Link}
+                                            to={`/demandas/new?pca_id=${id}`}
+                                            variant="contained"
+                                            size="small"
+                                            startIcon={<AddIcon />}
+                                        >
+                                            Nova Demanda
+                                        </Button>
+                                    )}
+                                </Box>
+                                {pca.demandas && pca.demandas.length > 0 ? (
+                                    <TableContainer component={Paper} variant="outlined">
+                                        <Table>
+                                            <TableHead sx={{ bgcolor: 'action.hover' }}>
+                                                <TableRow>
+                                                    <TableCell>Código</TableCell>
+                                                    <TableCell>Descrição</TableCell>
+                                                    <TableCell>Status</TableCell>
+                                                    <TableCell>Itens</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {pca.demandas.map((demanda) => (
+                                                    <TableRow
+                                                        key={demanda.id}
+                                                        hover
+                                                        onClick={() => navigate(`/demandas/${demanda.id}`)}
+                                                        sx={{ cursor: 'pointer' }}
+                                                    >
+                                                        <TableCell sx={{ fontFamily: 'monospace', color: 'primary.main', fontWeight: 'medium' }}>
+                                                            {demanda.codigo_demanda}
+                                                        </TableCell>
+                                                        <TableCell sx={{ maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                            {demanda.descricao}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <StatusBadge status={demanda.status} />
+                                                        </TableCell>
+                                                        <TableCell sx={{ color: 'text.secondary' }}>
+                                                            {demanda._count?.itens || 0}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                ) : (
+                                    <Box sx={{ 
+                                        textAlign: 'center', 
+                                        py: 4, 
+                                        bgcolor: 'action.hover', 
+                                        borderRadius: 1, 
+                                        border: 1, 
+                                        borderColor: 'divider',
+                                        borderStyle: 'dashed'
+                                    }}>
+                                        <Typography color="text.secondary" gutterBottom>
+                                            Nenhuma demanda cadastrada neste PCA.
+                                        </Typography>
+                                        {canEdit && !isReadOnly && (
+                                            <Button
+                                                component={Link}
+                                                to={`/demandas/new?pca_id=${id}`}
+                                                color="primary"
+                                            >
+                                                Cadastrar primeira demanda
+                                            </Button>
+                                        )}
+                                    </Box>
+                                )}
+                            </Paper>
+                        </Grid>
+                    </Grid>
+                </Grid>
 
                 {/* Right Column: Versions */}
-                <div className="space-y-6">
-                    <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-6 sticky top-6">
-                        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
-                            Histórico de Versões
-                        </h2>
-                        {versions.length > 0 ? (
-                            <div className="flex flex-col gap-3 relative before:absolute before:left-4 before:top-4 before:bottom-4 before:w-0.5 before:bg-gray-200 dark:before:bg-zinc-700">
-                                {versions.map((version) => (
-                                    <div
-                                        key={version.id}
-                                        className={`p-4 rounded-lg border ml-8 relative before:absolute before:-left-8 before:top-1/2 before:-translate-y-1/2 before:w-8 before:h-0.5 before:bg-gray-200 dark:before:bg-zinc-700 ${version.id === Number(id)
-                                            ? 'border-primary bg-primary/5 shadow-sm'
-                                            : 'border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800'
-                                            }`}
-                                    >
-                                        <div className="absolute -left-[37px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white dark:bg-zinc-800 border-2 border-primary z-10"></div>
+                <Grid size={{ xs: 12, lg: 4 }}>
+                    <Paper sx={{ p: 3, position: 'sticky', top: 24 }}>
+                        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <HistoryIcon color="action" /> Histórico de Versões
+                        </Typography>
+                        <Box sx={{ mt: 3 }}>
+                            {versions.length > 0 ? (
+                                <Box sx={{ position: 'relative', ml: 2, borderLeft: 2, borderColor: 'divider', pl: 3, py: 1 }}>
+                                    {versions.map((version) => (
+                                        <Paper
+                                            key={version.id}
+                                            variant="outlined"
+                                            sx={{ 
+                                                p: 2, 
+                                                mb: 2, 
+                                                position: 'relative',
+                                                borderColor: version.id === Number(id) ? 'primary.main' : 'divider',
+                                                bgcolor: version.id === Number(id) ? 'primary.50' : 'background.paper',
+                                                '&::before': {
+                                                    content: '""',
+                                                    position: 'absolute',
+                                                    left: -29,
+                                                    top: '50%',
+                                                    transform: 'translateY(-50%)',
+                                                    width: 12,
+                                                    height: 12,
+                                                    borderRadius: '50%',
+                                                    bgcolor: 'background.paper',
+                                                    border: 2,
+                                                    borderColor: version.id === Number(id) ? 'primary.main' : 'divider'
+                                                }
+                                            }}
+                                        >
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                                <Box>
+                                                    <Typography variant="subtitle1" fontWeight="bold">
+                                                        v{version.versao}.0
+                                                    </Typography>
+                                                    {version.id === Number(id) && (
+                                                        <Chip label="Atual" size="small" color="primary" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                                    )}
+                                                </Box>
+                                                <StatusBadge status={version.situacao} size="small" />
+                                            </Box>
 
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div>
-                                                <span className="font-bold text-gray-900 dark:text-gray-100">
-                                                    v{version.versao}.0
-                                                </span>
-                                                {version.id === Number(id) && (
-                                                    <span className="ml-2 text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Atual</span>
-                                                )}
-                                            </div>
-                                            <StatusBadge status={version.situacao} />
-                                        </div>
+                                            <Typography variant="caption" display="block" color="text.secondary" gutterBottom>
+                                                {new Date(version.data_criacao).toLocaleDateString('pt-BR')} às {new Date(version.data_criacao).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                            </Typography>
 
-                                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                                            {new Date(version.data_criacao).toLocaleDateString('pt-BR')} às {new Date(version.data_criacao).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
+                                            {version.motivo_versao && (
+                                                <Paper variant="outlined" sx={{ p: 1, my: 1, bgcolor: 'action.hover' }}>
+                                                    <Typography variant="caption" fontStyle="italic" color="text.secondary">
+                                                        "{version.motivo_versao}"
+                                                    </Typography>
+                                                </Paper>
+                                            )}
 
-                                        {version.motivo_versao && (
-                                            <div className="bg-gray-50 dark:bg-zinc-700/50 p-2 rounded text-xs text-gray-600 dark:text-gray-300 italic mb-2 border-l-2 border-gray-300 dark:border-zinc-600">
-                                                "{version.motivo_versao}"
-                                            </div>
-                                        )}
+                                            <Typography variant="caption" display="block" color="text.secondary">
+                                                Por: {version.responsavel?.nome_completo}
+                                            </Typography>
 
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                                            Por: {version.responsavel?.nome_completo}
-                                        </div>
-
-                                        {version.id !== Number(id) && (
-                                            <button
-                                                onClick={() => navigate(`/pcas/${version.id}`)}
-                                                className="w-full mt-3 py-1.5 text-xs font-medium text-primary border border-primary/30 rounded hover:bg-primary/5 transition-colors"
-                                            >
-                                                Visualizar Versão
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-gray-500 dark:text-gray-400 text-center py-4 italic">
-                                Sem histórico de versões.
-                            </p>
-                        )}
-                    </div>
-                </div>
-            </div>
+                                            {version.id !== Number(id) && (
+                                                <Button
+                                                    fullWidth
+                                                    variant="outlined"
+                                                    size="small"
+                                                    onClick={() => navigate(`/pcas/${version.id}`)}
+                                                    sx={{ mt: 1 }}
+                                                >
+                                                    Visualizar Versão
+                                                </Button>
+                                            )}
+                                        </Paper>
+                                    ))}
+                                </Box>
+                            ) : (
+                                <Typography color="text.secondary" align="center" fontStyle="italic">
+                                    Sem histórico de versões.
+                                </Typography>
+                            )}
+                        </Box>
+                    </Paper>
+                </Grid>
+            </Grid>
 
             {/* Modals */}
-            <Modal
-                isOpen={showStatusModal}
+            <Dialog
+                open={showStatusModal}
                 onClose={() => { setShowStatusModal(false); setJustificativa(''); }}
-                title={`Alterar Status para "${statusInfo.nextLabel}"`}
+                maxWidth="sm"
+                fullWidth
             >
-                <div className="space-y-4">
-                    <p className="text-gray-600 dark:text-gray-300">
-                        Confirma a alteração do status do PCA {pca.numero_pca} para <span className="font-bold text-gray-900 dark:text-gray-100">"{statusInfo.nextLabel}"</span>?
-                    </p>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Justificativa (opcional)
-                        </label>
-                        <textarea
-                            value={justificativa}
-                            onChange={(e) => setJustificativa(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md dark:bg-zinc-700 dark:text-gray-100 focus:ring-primary focus:border-primary"
-                            rows={3}
-                            placeholder="Insira uma justificativa para esta mudança de status..."
-                        />
-                    </div>
-                    <div className="flex justify-end gap-3 pt-2">
-                        <button
-                            onClick={() => { setShowStatusModal(false); setJustificativa(''); }}
-                            className="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={() => statusInfo.nextStatus && handleChangeStatus(statusInfo.nextStatus)}
-                            disabled={actionLoading}
-                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 shadow-sm"
-                        >
-                            {actionLoading ? 'Processando...' : 'Confirmar Alteração'}
-                        </button>
-                    </div>
-                </div>
-            </Modal>
+                <DialogTitle>Alterar Status para "{statusInfo.nextLabel}"</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ mb: 2 }}>
+                        Confirma a alteração do status do PCA {pca.numero_pca} para <Box component="span" fontWeight="bold">"{statusInfo.nextLabel}"</Box>?
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Justificativa (opcional)"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        value={justificativa}
+                        onChange={(e) => setJustificativa(e.target.value)}
+                        placeholder="Insira uma justificativa para esta mudança de status..."
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => { setShowStatusModal(false); setJustificativa(''); }} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button 
+                        onClick={() => statusInfo.nextStatus && handleChangeStatus(statusInfo.nextStatus)}
+                        variant="contained" 
+                        color="success"
+                        disabled={actionLoading}
+                    >
+                        {actionLoading ? 'Processando...' : 'Confirmar Alteração'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
-            <Modal
-                isOpen={showCancelModal}
+            <Dialog
+                open={showCancelModal}
                 onClose={() => { setShowCancelModal(false); setJustificativa(''); }}
-                title="Cancelar PCA"
+                maxWidth="sm"
+                fullWidth
             >
-                <div className="space-y-4">
-                    <div className="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 p-4 rounded-r-md">
-                        <div className="flex">
-                            <div className="flex-shrink-0">
-                                ⚠️
-                            </div>
-                            <div className="ml-3">
-                                <p className="text-sm text-orange-700 dark:text-orange-300 font-medium">
-                                    Esta ação cancelará o PCA definitivamente.
-                                </p>
-                                <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
-                                    O PCA permanecerá no sistema para consulta histórica, mas não poderá receber novas demandas ou alterações.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Justificativa (obrigatória)
-                        </label>
-                        <textarea
-                            value={justificativa}
-                            onChange={(e) => setJustificativa(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md dark:bg-zinc-700 dark:text-gray-100 focus:ring-orange-500 focus:border-orange-500"
-                            rows={3}
-                            placeholder="Informe detalhadamente o motivo do cancelamento..."
-                            required
-                        />
-                    </div>
-                    <div className="flex justify-end gap-3 pt-2">
-                        <button
-                            onClick={() => { setShowCancelModal(false); setJustificativa(''); }}
-                            className="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700"
-                        >
-                            Voltar
-                        </button>
-                        <button
-                            onClick={() => handleChangeStatus('CANCELADO')}
-                            disabled={actionLoading || justificativa.length < 10}
-                            className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 shadow-sm"
-                        >
-                            {actionLoading ? 'Processando...' : 'Confirmar Cancelamento'}
-                        </button>
-                    </div>
-                </div>
-            </Modal>
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'warning.main' }}>
+                    <WarningIcon /> Cancelar PCA
+                </DialogTitle>
+                <DialogContent>
+                    <Alert severity="warning" sx={{ mb: 3 }}>
+                        <Typography variant="subtitle2" fontWeight="bold">
+                            Esta ação cancelará o PCA definitivamente.
+                        </Typography>
+                        O PCA permanecerá no sistema para consulta histórica, mas não poderá receber novas demandas ou alterações.
+                    </Alert>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Justificativa (obrigatória)"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        value={justificativa}
+                        onChange={(e) => setJustificativa(e.target.value)}
+                        placeholder="Informe detalhadamente o motivo do cancelamento..."
+                        required
+                        error={justificativa.length > 0 && justificativa.length < 10}
+                        helperText={justificativa.length > 0 && justificativa.length < 10 ? "Mínimo 10 caracteres" : ""}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => { setShowCancelModal(false); setJustificativa(''); }} color="inherit">
+                        Voltar
+                    </Button>
+                    <Button 
+                        onClick={() => handleChangeStatus('CANCELADO')}
+                        variant="contained" 
+                        color="warning"
+                        disabled={actionLoading || justificativa.length < 10}
+                    >
+                        {actionLoading ? 'Processando...' : 'Confirmar Cancelamento'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
-            <Modal
-                isOpen={showVersionModal}
+            <Dialog
+                open={showVersionModal}
                 onClose={() => { setShowVersionModal(false); setMotivo(''); }}
-                title="Criar Nova Versão"
+                maxWidth="sm"
+                fullWidth
             >
-                <div className="space-y-4">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md border border-blue-100 dark:border-blue-800">
-                        <p className="text-sm text-blue-800 dark:text-blue-300">
-                            <span className="font-bold">Como funciona:</span> Será criada uma cópia deste PCA (v{pca.versao}) como v{pca.versao + 1}.
-                            A nova versão iniciará com status "Em Elaboração" e herdará todas as demandas ativas.
-                        </p>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Motivo da nova versão (obrigatório)
-                        </label>
-                        <textarea
-                            value={motivo}
-                            onChange={(e) => setMotivo(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md dark:bg-zinc-700 dark:text-gray-100 focus:ring-purple-500 focus:border-purple-500"
-                            rows={3}
-                            placeholder="Ex: Ajuste de valores após análise de mercado, Inclusão de novas demandas..."
-                            required
-                        />
-                    </div>
-                    <div className="flex justify-end gap-3 pt-2">
-                        <button
-                            onClick={() => { setShowVersionModal(false); setMotivo(''); }}
-                            className="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={handleCreateVersion}
-                            disabled={actionLoading || motivo.length < 10}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 shadow-sm"
-                        >
-                            {actionLoading ? 'Criando...' : 'Criar Versão v' + (pca.versao + 1)}
-                        </button>
-                    </div>
-                </div>
-            </Modal>
+                <DialogTitle>Criar Nova Versão</DialogTitle>
+                <DialogContent>
+                    <Alert severity="info" sx={{ mb: 3 }}>
+                        <Typography variant="subtitle2" fontWeight="bold">Como funciona:</Typography>
+                        Será criada uma cópia deste PCA (v{pca.versao}) como v{pca.versao + 1}.
+                        A nova versão iniciará com status "Em Elaboração" e herdará todas as demandas ativas.
+                    </Alert>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Motivo da nova versão (obrigatório)"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        value={motivo}
+                        onChange={(e) => setMotivo(e.target.value)}
+                        placeholder="Ex: Ajuste de valores após análise de mercado, Inclusão de novas demandas..."
+                        required
+                        error={motivo.length > 0 && motivo.length < 10}
+                        helperText={motivo.length > 0 && motivo.length < 10 ? "Mínimo 10 caracteres" : ""}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => { setShowVersionModal(false); setMotivo(''); }} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button 
+                        onClick={handleCreateVersion}
+                        variant="contained" 
+                        color="secondary"
+                        disabled={actionLoading || motivo.length < 10}
+                    >
+                        {actionLoading ? 'Criando...' : 'Criar Versão v' + (pca.versao + 1)}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
-            <Modal
-                isOpen={showDeleteModal}
+            <Dialog
+                open={showDeleteModal}
                 onClose={() => { setShowDeleteModal(false); setJustificativa(''); }}
-                title="Excluir PCA"
+                maxWidth="sm"
+                fullWidth
             >
-                <div className="space-y-4">
-                    <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded-r-md">
-                        <div className="flex">
-                            <div className="flex-shrink-0 text-red-500">
-                                🗑️
-                            </div>
-                            <div className="ml-3">
-                                <h3 className="text-sm font-medium text-red-800 dark:text-red-300">
-                                    Atenção: Ação Irreversível
-                                </h3>
-                                <div className="mt-2 text-sm text-red-700 dark:text-red-400">
-                                    <p>Esta ação excluirá permanentemente o PCA e todo seu histórico.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Justificativa (opcional)
-                        </label>
-                        <textarea
-                            value={justificativa}
-                            onChange={(e) => setJustificativa(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md dark:bg-zinc-700 dark:text-gray-100 focus:ring-red-500 focus:border-red-500"
-                            rows={3}
-                            placeholder="Motivo da exclusão..."
-                        />
-                    </div>
-                    <div className="flex justify-end gap-3 pt-2">
-                        <button
-                            onClick={() => { setShowDeleteModal(false); setJustificativa(''); }}
-                            className="px-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-700"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={handleDelete}
-                            disabled={actionLoading}
-                            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 shadow-sm"
-                        >
-                            {actionLoading ? 'Excluindo...' : 'Confirmar Exclusão'}
-                        </button>
-                    </div>
-                </div>
-            </Modal>
-        </div>
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}>
+                    <DeleteIcon /> Excluir PCA
+                </DialogTitle>
+                <DialogContent>
+                    <Alert severity="error" sx={{ mb: 3 }}>
+                        <Typography variant="subtitle2" fontWeight="bold">
+                            Atenção: Ação Irreversível
+                        </Typography>
+                        Esta ação excluirá permanentemente o PCA e todo seu histórico.
+                    </Alert>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Justificativa (opcional)"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        value={justificativa}
+                        onChange={(e) => setJustificativa(e.target.value)}
+                        placeholder="Motivo da exclusão..."
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => { setShowDeleteModal(false); setJustificativa(''); }} color="inherit">
+                        Cancelar
+                    </Button>
+                    <Button 
+                        onClick={handleDelete}
+                        variant="contained" 
+                        color="error"
+                        disabled={actionLoading}
+                    >
+                        {actionLoading ? 'Processando...' : 'Confirmar Exclusão'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </Container>
     );
 }

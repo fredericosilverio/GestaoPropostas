@@ -2,6 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
+import {
+    Box,
+    Button,
+    Container,
+    Grid,
+    MenuItem,
+    Paper,
+    TextField,
+    Typography,
+    Alert,
+    CircularProgress
+} from '@mui/material';
+import { Save as SaveIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 
 interface PcaOption {
     id: number;
@@ -113,177 +126,187 @@ export function DemandaForm() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto bg-white dark:bg-zinc-800 rounded-lg shadow-md p-8">
-            <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">Nova Demanda</h1>
+        <Container maxWidth="md" sx={{ py: 4 }}>
+            <Paper elevation={2} sx={{ p: 4 }}>
+                <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+                    Nova Demanda
+                </Typography>
 
-            {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-                    {error}
-                </div>
-            )}
+                {error && (
+                    <Alert severity="error" sx={{ mb: 3 }}>
+                        {error}
+                    </Alert>
+                )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">PCA Vinculado (Ano/Órgão)</label>
-                        <select
-                            value={pcaId}
-                            onChange={e => setPcaId(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            required
+                <Box component="form" onSubmit={handleSubmit}>
+                    <Grid container spacing={3}>
+                        <Grid size={{ xs: 12, md: 8 }}>
+                            <TextField
+                                select
+                                fullWidth
+                                label="PCA Vinculado (Ano/Órgão)"
+                                value={pcaId}
+                                onChange={e => setPcaId(e.target.value)}
+                                required
+                            >
+                                <MenuItem value="">
+                                    <em>Selecione...</em>
+                                </MenuItem>
+                                {pcas.map(pca => (
+                                    <MenuItem key={pca.id} value={pca.id}>
+                                        {pca.ano} - {pca.orgao} (v{pca.versao})
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <TextField
+                                fullWidth
+                                label="Unidade Demandante"
+                                value={unidadeDemandante}
+                                onChange={e => setUnidadeDemandante(e.target.value)}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <TextField
+                                fullWidth
+                                label="Valor Estimado Global (R$)"
+                                value={valorEstimado}
+                                onChange={handleValorChange}
+                                placeholder="R$ 0,00"
+                            />
+                        </Grid>
+
+                        <Grid size={12}>
+                            <TextField
+                                fullWidth
+                                label="Objeto (Descrição Resumida)"
+                                value={descricao}
+                                onChange={e => setDescricao(e.target.value)}
+                                multiline
+                                rows={3}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid size={12}>
+                            <TextField
+                                fullWidth
+                                label="Justificativa Técnica"
+                                value={justificativaTecnica}
+                                onChange={e => setJustificativaTecnica(e.target.value)}
+                                multiline
+                                rows={4}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid size={12}>
+                            <TextField
+                                fullWidth
+                                label="Justificativa Administrativa"
+                                value={justificativaAdministrativa}
+                                onChange={e => setJustificativaAdministrativa(e.target.value)}
+                                multiline
+                                rows={4}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                                fullWidth
+                                label="Centro de Custo"
+                                value={centroCusto}
+                                onChange={e => setCentroCusto(e.target.value)}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                                fullWidth
+                                label="Elemento de Despesa"
+                                value={elementoDespesa}
+                                onChange={e => setElementoDespesa(e.target.value)}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <TextField
+                                fullWidth
+                                label="Prazo Vigência (meses)"
+                                type="number"
+                                value={prazoVigencia}
+                                onChange={e => setPrazoVigencia(e.target.value)}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <TextField
+                                fullWidth
+                                label="Data Prevista Contratação"
+                                type="date"
+                                value={dataPrevista}
+                                onChange={e => setDataPrevista(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <TextField
+                                select
+                                fullWidth
+                                label="Tipo Contratação"
+                                value={tipoContratacao}
+                                onChange={e => setTipoContratacao(e.target.value)}
+                            >
+                                <MenuItem value="NOVA">Nova</MenuItem>
+                                <MenuItem value="RENOVACAO">Renovação</MenuItem>
+                                <MenuItem value="PRORROGACAO">Prorrogação</MenuItem>
+                                <MenuItem value="ADESAO">Adesão (Carona)</MenuItem>
+                            </TextField>
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <TextField
+                                select
+                                fullWidth
+                                label="Natureza Despesa"
+                                value={naturezaDespesa}
+                                onChange={e => setNaturezaDespesa(e.target.value)}
+                            >
+                                <MenuItem value="CUSTEIO">Custeio</MenuItem>
+                                <MenuItem value="INVESTIMENTO">Investimento</MenuItem>
+                            </TextField>
+                        </Grid>
+                    </Grid>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => navigate('/demandas')}
+                            startIcon={<ArrowBackIcon />}
                         >
-                            <option value="">Selecione...</option>
-                            {pcas.map(pca => (
-                                <option key={pca.id} value={pca.id}>
-                                    {pca.ano} - {pca.orgao} (v{pca.versao})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Unidade Demandante</label>
-                        <input
-                            type="text"
-                            value={unidadeDemandante}
-                            onChange={e => setUnidadeDemandante(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Valor Estimado Global (R$)</label>
-                        <input
-                            type="text"
-                            value={valorEstimado}
-                            onChange={handleValorChange}
-                            placeholder="R$ 0,00"
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                        />
-                    </div>
-
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Objeto (Descrição Resumida)</label>
-                        <textarea
-                            value={descricao}
-                            onChange={e => setDescricao(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            rows={3}
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Justificativa Técnica</label>
-                        <textarea
-                            value={justificativaTecnica}
-                            onChange={e => setJustificativaTecnica(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            rows={4}
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Justificativa Administrativa</label>
-                        <textarea
-                            value={justificativaAdministrativa}
-                            onChange={e => setJustificativaAdministrativa(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            rows={4}
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Centro de Custo</label>
-                        <input
-                            type="text"
-                            value={centroCusto}
-                            onChange={e => setCentroCusto(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Elemento de Despesa</label>
-                        <input
-                            type="text"
-                            value={elementoDespesa}
-                            onChange={e => setElementoDespesa(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Prazo Vigência (meses)</label>
-                        <input
-                            type="number"
-                            value={prazoVigencia}
-                            onChange={e => setPrazoVigencia(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Data Prevista Contratação</label>
-                        <input
-                            type="date"
-                            value={dataPrevista}
-                            onChange={e => setDataPrevista(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo Contratação</label>
-                        <select
-                            value={tipoContratacao}
-                            onChange={e => setTipoContratacao(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={loading}
+                            startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
                         >
-                            <option value="NOVA">Nova</option>
-                            <option value="RENOVACAO">Renovação</option>
-                            <option value="PRORROGACAO">Prorrogação</option>
-                            <option value="ADESAO">Adesão (Carona)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Natureza Despesa</label>
-                        <select
-                            value={naturezaDespesa}
-                            onChange={e => setNaturezaDespesa(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-100"
-                        >
-                            <option value="CUSTEIO">Custeio</option>
-                            <option value="INVESTIMENTO">Investimento</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-zinc-700">
-                    <button
-                        type="button"
-                        onClick={() => navigate('/demandas')}
-                        className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-light focus:outline-none disabled:opacity-50"
-                    >
-                        {loading ? 'Salvando...' : 'Salvar'}
-                    </button>
-                </div>
-            </form>
-        </div>
+                            {loading ? 'Salvando...' : 'Salvar'}
+                        </Button>
+                    </Box>
+                </Box>
+            </Paper>
+        </Container>
     );
 }
