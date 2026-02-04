@@ -26,7 +26,7 @@ export class ReportController {
 
             console.log(`PDF Generation - ID: ${id}, Filter: ${filterType}`);
 
-            const pdfBuffer = await pdfService.generateMarketAnalysisReport(id, filterType as 'all' | 'median25');
+            const pdfBuffer = await pdfService.generateMarketAnalysisReport(id, filterType as 'all' | 'median25' | 'median25fallback');
 
             res.setHeader('X-Report-Version', 'v3-market-analysis');
 

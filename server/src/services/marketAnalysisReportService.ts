@@ -22,7 +22,7 @@ export class MarketAnalysisReportService {
         };
     }
 
-    async generateMarketAnalysisReport(demandaId: number, filterType: 'all' | 'median25' = 'all'): Promise<Buffer> {
+    async generateMarketAnalysisReport(demandaId: number, filterType: 'all' | 'median25' | 'median25fallback' = 'all'): Promise<Buffer> {
         // Fetch Demanda with all relations
         const demanda = await prisma.demanda.findUnique({
             where: { id: demandaId },
@@ -47,28 +47,48 @@ export class MarketAnalysisReportService {
 
         // Calculate statistics for each item, optionally filtering prices for calculations
         const itensComEstatisticas = demanda.itens.map(item => {
-            let precosParaCalculo = item.precos;
+            // 1. Calculate base stats to classify prices correctly for this report session
+            const baseStats = marketAnalysisService.calculateStatistics(item.precos);
 
-            // If median25 filter is selected, only use prices classified as 'ACEITO' for calculations
+            // 2. Classify ALL prices based on the median of ALL prices
+            const classifiedPrices = marketAnalysisService.classifyPrices(item.precos, baseStats.mediana);
+
+            let precosParaCalculo = classifiedPrices;
+            let observacoesAdicionais = '';
+
+            // 3. Apply Filtering Logic
             if (filterType === 'median25') {
-                precosParaCalculo = item.precos.filter((p: any) => p.classificacao === 'ACEITO');
+                precosParaCalculo = classifiedPrices.filter((p: any) => p.classificacao === 'ACEITO');
+            } else if (filterType === 'median25fallback') {
+                const precosAceitos = classifiedPrices.filter((p: any) => p.classificacao === 'ACEITO');
+                if (precosAceitos.length > 0) {
+                    precosParaCalculo = precosAceitos;
+                } else {
+                    precosParaCalculo = classifiedPrices;
+                    // Add fallback observation
+                    //observacoesAdicionais = "Em razão da expressiva dispersão dos preços coletados para o item, não foram identificadas propostas que atendessem integralmente ao critério de aceitabilidade definido pelo intervalo de ±25% em relação à mediana, evidenciando a heterogeneidade do mercado para esse objeto. Diante dessa situação excepcional, e com o objetivo de assegurar maior fidedignidade à estimativa de preços, optou-se pela consideração de todos os valores obtidos na apuração do preço de referência, em observância aos princípios da razoabilidade, transparência e interesse público.";
+                }
             }
 
-            const stats = marketAnalysisService.calculateStatistics(precosParaCalculo);
+            // 4. Calculate final stats based on filtered (or fallback) prices
+            const finalStats = marketAnalysisService.calculateStatistics(precosParaCalculo);
 
-            // Recalculate percentual_variacao based on the specific median of this report configuration
-            const precosComVariacaoCorrigida = item.precos.map((p: any) => ({
+            // 5. Finalize prices with corrected variation (relative to the final median used in report)
+            const precosFinalizados = classifiedPrices.map((p: any) => ({
                 ...p,
-                percentual_variacao: stats.mediana > 0
-                    ? ((Number(p.valor_unitario) - stats.mediana) / stats.mediana) * 100
+                percentual_variacao: finalStats.mediana > 0
+                    ? ((Number(p.valor_unitario) - finalStats.mediana) / finalStats.mediana) * 100
                     : 0
             }));
 
             return {
                 ...item,
-                precos: precosComVariacaoCorrigida, // Use updated prices
+                observacoes: item.observacoes
+                    ? (observacoesAdicionais ? `${item.observacoes}\n\n${observacoesAdicionais}` : item.observacoes)
+                    : observacoesAdicionais,
+                precos: precosFinalizados,
                 precosParaCalculo: precosParaCalculo,
-                estatisticas: stats,
+                estatisticas: finalStats,
                 filterApplied: filterType
             };
         });
@@ -453,6 +473,12 @@ export class MarketAnalysisReportService {
             </table>
             <table class="info-table">
                 <tr>
+                    <td class="label" style="width: 15%;">Descrição</td>
+                    <td style="text-align: justify;">${demanda.descricao || 'Não informada'}</td>
+                </tr>
+            </table>
+            <table class="info-table">
+                <tr>
                     <td class="label" style="width: 15%;">Justificativa</td>
                     <td style="text-align: justify;">${demanda.justificativa_tecnica || 'Não informada'}</td>
                 </tr>
@@ -555,7 +581,7 @@ export class MarketAnalysisReportService {
                     <div class="stat"><div class="stat-value">${(item.estatisticas.cv || 0).toFixed(2)}%</div><div class="stat-label">CV</div></div>
                     <div class="stat total-box"><div class="stat-value">R$ ${Number(item.valor_estimado_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div class="stat-label">Total Item</div></div>
                 </div>
-                ${item.observacoes ? `<div style="margin-top: 6pt; padding: 6pt 8pt; background: #fffbeb; border-left: 3px solid #f59e0b; font-size: 9pt; font-style: italic; print-color-adjust: exact; -webkit-print-color-adjust: exact;"><strong>Obs.:</strong> ${item.observacoes}</div>` : ''}
+                ${item.observacoes ? `<div style="margin-top: 6pt; padding: 6pt 8pt; background: #fffbeb; border-left: 3px solid #f59e0b; font-size: 9pt; font-style: italic; print-color-adjust: exact; -webkit-print-color-adjust: exact; text-align: justify;"><strong>Obs.:</strong> ${item.observacoes}</div>` : ''}
             </div>
             `).join('')}
         </div>

@@ -17,12 +17,12 @@ import { PictureAsPdf as PdfIcon } from '@mui/icons-material';
 interface ReportOptionsModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onGenerate: (filterType: 'all' | 'median25') => void;
+    onGenerate: (filterType: 'all' | 'median25' | 'median25fallback') => void;
     isLoading?: boolean;
 }
 
 export function ReportOptionsModal({ isOpen, onClose, onGenerate, isLoading }: ReportOptionsModalProps) {
-    const [filterType, setFilterType] = useState<'all' | 'median25'>('all');
+    const [filterType, setFilterType] = useState<'all' | 'median25' | 'median25fallback'>('median25fallback');
 
     const handleGenerate = () => {
         onGenerate(filterType);
@@ -40,8 +40,25 @@ export function ReportOptionsModal({ isOpen, onClose, onGenerate, isLoading }: R
                         aria-label="filter-type"
                         name="filter-type"
                         value={filterType}
-                        onChange={(e) => setFilterType(e.target.value as 'all' | 'median25')}
+                        onChange={(e) => setFilterType(e.target.value as 'all' | 'median25' | 'median25fallback')}
                     >
+                        <Paper variant="outlined" sx={{ mb: 2, p: 1, border: filterType === 'median25fallback' ? '2px solid' : '1px solid', borderColor: filterType === 'median25fallback' ? 'success.main' : 'divider', bgcolor: filterType === 'median25fallback' ? 'success.50' : 'background.paper', '&:hover': { bgcolor: filterType === 'median25fallback' ? 'success.50' : 'action.hover' } }}>
+                            <FormControlLabel
+                                value="median25fallback"
+                                control={<Radio color="success" />}
+                                label={
+                                    <Box sx={{ ml: 1 }}>
+                                        <Typography variant="subtitle1" component="div" fontWeight="bold" color="success.dark">
+                                            ±25% da Mediana (Recomendado)
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Utiliza preços dentro de ±25% da mediana. Caso não existam preços válidos, utiliza <strong>todos os valores</strong> com justificativa legal automática.
+                                        </Typography>
+                                    </Box>
+                                }
+                                sx={{ m: 0, alignItems: 'flex-start', py: 1, width: '100%' }}
+                            />
+                        </Paper>
                         <Paper variant="outlined" sx={{ mb: 2, p: 1, '&:hover': { bgcolor: 'action.hover' } }}>
                             <FormControlLabel
                                 value="all"

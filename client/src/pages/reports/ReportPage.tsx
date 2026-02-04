@@ -1,25 +1,25 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Box,
-  Button,
-  Paper,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Grid,
-  Stack
+    Box,
+    Button,
+    Paper,
+    Typography,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Grid,
+    Stack
 } from '@mui/material';
 import {
-  ArrowBack as ArrowBackIcon,
-  Print as PrintIcon,
-  PictureAsPdf as PdfIcon,
-  TableView as ExcelIcon,
-  Warning as WarningIcon
+    ArrowBack as ArrowBackIcon,
+    Print as PrintIcon,
+    PictureAsPdf as PdfIcon,
+    TableView as ExcelIcon,
+    Warning as WarningIcon
 } from '@mui/icons-material';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
@@ -50,7 +50,7 @@ export function ReportPage() {
         window.print();
     };
 
-    const handleExportPDF = async (filterType: 'all' | 'median25') => {
+    const handleExportPDF = async (filterType: 'all' | 'median25' | 'median25fallback') => {
         try {
             setIsPdfLoading(true);
             const response = await api.get(`/reports/market-analysis/${id}/pdf?filterType=${filterType}`, {
@@ -144,7 +144,7 @@ export function ReportPage() {
             </Box>
 
             {/* A4 Page Container */}
-            <Paper 
+            <Paper
                 ref={printRef}
                 elevation={3}
                 sx={{
