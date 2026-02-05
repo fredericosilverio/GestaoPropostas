@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Button,
   Card,
   TextField,
   Typography,
-  InputAdornment
+  InputAdornment,
+  Chip,
+  IconButton
 } from '@mui/material';
 import {
   DataGrid,
@@ -22,7 +24,8 @@ import {
   Add as AddIcon,
   Search as SearchIcon,
   Edit as EditIcon,
-  Visibility as VisibilityIcon
+  Visibility as VisibilityIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
@@ -45,11 +48,14 @@ export function DemandaList() {
   const [demandas, setDemandas] = useState<Demanda[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  const pcaIdFilter = searchParams.get('pca_id');
 
   useEffect(() => {
     loadDemandas();
-  }, []);
+  }, [pcaIdFilter]);
 
   // Debounce search effect
   useEffect(() => {
@@ -62,7 +68,10 @@ export function DemandaList() {
 
   async function loadDemandas(query: string = '') {
     try {
-      const params = query ? { q: query } : {};
+      const params: any = {};
+      if (query) params.q = query;
+      if (pcaIdFilter) params.pca_id = pcaIdFilter;
+
       const response = await api.get('/demandas', { params });
       setDemandas(response.data);
     } catch (error) {
@@ -71,6 +80,10 @@ export function DemandaList() {
       setLoading(false);
     }
   }
+
+  const handleClearFilter = () => {
+    setSearchParams({});
+  };
 
   const columns: GridColDef[] = [
     { 
@@ -153,21 +166,33 @@ export function DemandaList() {
       </Box>
 
       <Card sx={{ mb: 3, p: 2 }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Buscar por código (PCA2026...) ou descrição..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-          }}
-          size="small"
-        />
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Buscar demandas..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+            }}
+            size="small"
+            sx={{ flex: 1 }}
+          />
+          
+          {pcaIdFilter && (
+             <Chip
+               label={`Filtrado por PCA ID: ${pcaIdFilter}`}
+               onDelete={handleClearFilter}
+               color="primary"
+               variant="outlined"
+             />
+          )}
+        </Box>
       </Card>
 
       {demandas.length === 0 && !searchTerm ? (

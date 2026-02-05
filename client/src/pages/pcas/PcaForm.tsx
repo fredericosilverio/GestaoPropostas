@@ -58,6 +58,7 @@ const FORMAS_APROVACAO = [
 interface FormData {
     // Dados Gerais
     ano: number;
+    numero_pca: string;
     denominacao: string;
 
     // Vinculação Institucional
@@ -89,6 +90,7 @@ interface FormData {
 
 const initialFormData: FormData = {
     ano: new Date().getFullYear(),
+    numero_pca: '',
     denominacao: '',
     orgao: '',
     orgaoCustom: '',
@@ -127,7 +129,6 @@ export function PcaForm() {
     const [error, setError] = useState('');
     const [isReadOnly, setIsReadOnly] = useState(false);
     const [situacao, setSituacao] = useState('');
-    const [numeroPca, setNumeroPca] = useState('');
     const [activeSection, setActiveSection] = useState('dados-gerais');
 
     useEffect(() => {
@@ -157,6 +158,7 @@ export function PcaForm() {
 
             setFormData({
                 ano: pca.ano,
+                numero_pca: pca.numero_pca || '',
                 denominacao: pca.denominacao || '',
                 orgao: selectedOrgao,
                 orgaoCustom: customOrgao,
@@ -176,7 +178,6 @@ export function PcaForm() {
                 historico_alteracoes: pca.historico_alteracoes || ''
             });
 
-            setNumeroPca(pca.numero_pca);
             setSituacao(pca.situacao);
             setIsReadOnly(pca.situacao === 'ENCERRADO' || pca.situacao === 'CANCELADO');
         } catch (err: any) {
@@ -213,6 +214,7 @@ export function PcaForm() {
         try {
             const payload: any = {
                 ano: Number(formData.ano),
+                numero_pca: formData.numero_pca,
                 orgao: finalOrgao.trim(),
                 denominacao: formData.denominacao || null,
                 unidade_demandante: formData.unidade_demandante || null,
@@ -273,7 +275,7 @@ export function PcaForm() {
             }}>
                 <Box>
                     <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-                        {isEditing ? `Editar PCA ${numeroPca}` : 'Novo Plano de Contratações Anual'}
+                        {isEditing ? `Editar PCA ${formData.numero_pca}` : 'Novo Plano de Contratações Anual'}
                     </Typography>
                     {isEditing && situacao && (
                         <Box sx={{ mt: 1 }}>
@@ -378,17 +380,18 @@ export function PcaForm() {
                                                 required
                                             />
                                         </Grid>
-                                        {isEditing && (
-                                            <Grid size={{ xs: 12, sm: 6 }}>
-                                                <TextField
-                                                    fullWidth
-                                                    label="Código do PCA"
-                                                    value={numeroPca}
-                                                    disabled
-                                                    InputProps={{ sx: { fontFamily: 'monospace' } }}
-                                                />
-                                            </Grid>
-                                        )}
+                                        <Grid size={{ xs: 12, sm: 6 }}>
+                                            <TextField
+                                                fullWidth
+                                                label="Código do PCA"
+                                                value={formData.numero_pca}
+                                                onChange={e => updateField('numero_pca', e.target.value)}
+                                                placeholder="Ex: PCA-2026/001"
+                                                helperText="Código identificador único do PCA"
+                                                disabled={isReadOnly}
+                                                required
+                                            />
+                                        </Grid>
                                         <Grid size={12}>
                                             <TextField
                                                 fullWidth

@@ -28,6 +28,7 @@ export function DemandaForm() {
     const [pcas, setPcas] = useState<PcaOption[]>([]);
 
     // Form Fields
+    const [codigoDemanda, setCodigoDemanda] = useState('');
     const [descricao, setDescricao] = useState('');
     const [valorEstimado, setValorEstimado] = useState('');
     const [justificativaTecnica, setJustificativaTecnica] = useState('');
@@ -102,6 +103,7 @@ export function DemandaForm() {
         try {
             await api.post('/demandas', {
                 pca_id: Number(pcaId),
+                codigo_demanda: codigoDemanda,
                 descricao,
                 valor_estimado_global: valorNumerico,
                 justificativa_tecnica: justificativaTecnica,
@@ -158,6 +160,17 @@ export function DemandaForm() {
                                     </MenuItem>
                                 ))}
                             </TextField>
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <TextField
+                                fullWidth
+                                label="Código da Demanda"
+                                value={codigoDemanda}
+                                onChange={e => setCodigoDemanda(e.target.value)}
+                                placeholder="Ex: D-2026/001"
+                                required
+                            />
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 4 }}>

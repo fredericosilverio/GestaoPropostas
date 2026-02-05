@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.catalogoRoutes = void 0;
+const express_1 = require("express");
+const catalogoController_1 = require("../controllers/catalogoController");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const catalogoRoutes = (0, express_1.Router)();
+exports.catalogoRoutes = catalogoRoutes;
+const catalogoController = new catalogoController_1.CatalogoController();
+catalogoRoutes.use(authMiddleware_1.authMiddleware);
+catalogoRoutes.get('/', catalogoController.list);
+catalogoRoutes.get('/categorias', catalogoController.listCategorias);
+catalogoRoutes.get('/:id', catalogoController.findById);
+catalogoRoutes.post('/', catalogoController.create);
+catalogoRoutes.put('/:id', catalogoController.update);
+catalogoRoutes.delete('/:id', catalogoController.delete);
+catalogoRoutes.post('/import', catalogoController.importToItem);

@@ -1,28 +1,24 @@
-import puppeteer from 'puppeteer';
-import { PrismaClient } from '@prisma/client';
-import { MarketAnalysisService } from './marketAnalysisService';
-import path from 'path';
-import fs from 'fs';
-
-const prisma = new PrismaClient();
-const marketAnalysisService = new MarketAnalysisService();
-
-interface PdfServiceOptions {
-    logoPath?: string;
-    orgaoNome?: string;
-}
-
-export class MarketAnalysisReportService {
-    private options: PdfServiceOptions;
-
-    constructor(options: PdfServiceOptions = {}) {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MarketAnalysisReportService = void 0;
+const puppeteer_1 = __importDefault(require("puppeteer"));
+const client_1 = require("@prisma/client");
+const marketAnalysisService_1 = require("./marketAnalysisService");
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+const prisma = new client_1.PrismaClient();
+const marketAnalysisService = new marketAnalysisService_1.MarketAnalysisService();
+class MarketAnalysisReportService {
+    constructor(options = {}) {
         this.options = {
             logoPath: options.logoPath || '',
             orgaoNome: options.orgaoNome || 'Estado de Goiás'
         };
     }
-
-    async generateMarketAnalysisReport(demandaId: number, filterType: 'all' | 'median25' | 'median25fallback' = 'all'): Promise<Buffer> {
+    async generateMarketAnalysisReport(demandaId, filterType = 'all') {
         // Fetch Demanda with all relations
         const demanda = await prisma.demanda.findUnique({
             where: { id: demandaId },
@@ -40,66 +36,57 @@ export class MarketAnalysisReportService {
                 }
             }
         });
-
         if (!demanda) {
             throw new Error('Demanda não encontrada');
         }
-
         // Calculate statistics for each item, optionally filtering prices for calculations
         const itensComEstatisticas = demanda.itens.map(item => {
             // 1. Calculate base stats to classify prices correctly for this report session
             const baseStats = marketAnalysisService.calculateStatistics(item.precos);
-
             // 2. Classify ALL prices based on the median of ALL prices
             const classifiedPrices = marketAnalysisService.classifyPrices(item.precos, baseStats.mediana);
-
             let precosParaCalculo = classifiedPrices;
             let observacoesAdicionais = '';
-
             // 3. Apply Filtering Logic
-            let isFallbackScenario = false;
             if (filterType === 'median25' || filterType === 'median25fallback') {
                 // Initial Filter
-                let precosAceitos = classifiedPrices.filter((p: any) => p.classificacao === 'ACEITO');
-
+                let precosAceitos = classifiedPrices.filter((p) => p.classificacao === 'ACEITO');
                 // Refinement Loop: Ensure that the items used for stats are consistent with the resulting stats
                 // This prevents the "24k is Valid but > 25% of displayed Median" issue.
                 let currentCandidates = precosAceitos;
                 if (currentCandidates.length > 0) {
                     let stable = false;
                     let iterations = 0;
-                    
                     while (!stable && iterations < 3) {
                         const currentStats = marketAnalysisService.calculateStatistics(currentCandidates);
                         const lower = currentStats.mediana * 0.75;
                         const upper = currentStats.mediana * 1.25;
-                        
-                        const nextCandidates = currentCandidates.filter((p: any) => {
+                        const nextCandidates = currentCandidates.filter((p) => {
                             const val = Number(p.valor_unitario);
                             return val >= lower && val <= upper;
                         });
-                        
                         if (nextCandidates.length === currentCandidates.length) {
                             stable = true;
-                        } else {
+                        }
+                        else {
                             currentCandidates = nextCandidates;
-                            if (currentCandidates.length === 0) break;
+                            if (currentCandidates.length === 0)
+                                break;
                         }
                         iterations++;
                     }
                 }
-
                 if (currentCandidates.length > 0) {
                     precosParaCalculo = currentCandidates;
-                } else if (filterType === 'median25fallback') {
+                }
+                else if (filterType === 'median25fallback') {
                     precosParaCalculo = classifiedPrices;
-                    isFallbackScenario = true;
-                    observacoesAdicionais = "Em razão da elevada disparidade entre os preços coletados para o item, não foi possível identificar valores que se enquadrassem integralmente nos critérios de aceitação definidos, com base no intervalo de ±25% em relação à mediana apurada, o que evidencia a heterogeneidade do mercado para esse tipo de serviço.";
-                } else {
+                    // observacoesAdicionais = ...
+                }
+                else {
                     precosParaCalculo = [];
                 }
             }
-
             // 4. Calculate final stats based on filtered (or fallback) prices
             const rawStats = marketAnalysisService.calculateStatistics(precosParaCalculo);
             const finalStats = {
@@ -111,47 +98,39 @@ export class MarketAnalysisReportService {
                 min: rawStats.min ? Number(rawStats.min.toFixed(2)) : 0,
                 max: rawStats.max ? Number(rawStats.max.toFixed(2)) : 0
             };
-
             // 5. Finalize prices with corrected variation and classification
-            const precosFinalizados = classifiedPrices.map((p: any) => {
-                const isUsed = precosParaCalculo.some((pc: any) => pc.id === p.id);
+            const precosFinalizados = classifiedPrices.map((p) => {
+                const isUsed = precosParaCalculo.some((pc) => pc.id === p.id);
                 const valor = Number(p.valor_unitario);
-                
                 // Recalculate variation relative to the FINAL median
                 const percentual_variacao = finalStats.mediana > 0
                     ? ((valor - finalStats.mediana) / finalStats.mediana) * 100
                     : 0;
-
                 let classificacao = p.classificacao;
-                
                 // Update classification to match the visual report logic
                 if (isUsed) {
-                    // Only mark as 'ACEITO' if NOT in fallback scenario.
-                    // If fallback, we use the price but keep its original classification (relative to final stats)
-                    // to show that it is technically outside the limits but used anyway.
-                    if (!isFallbackScenario) {
-                        classificacao = 'ACEITO';
-                    }
-                } else if (p.classificacao === 'INVALIDO_DATA') {
+                    classificacao = 'ACEITO';
+                }
+                else if (p.classificacao === 'INVALIDO_DATA') {
                     classificacao = 'INVALIDO_DATA';
-                } else {
+                }
+                else {
                     // If it's not used (and not invalid by date), check why it's out relative to FINAL stats
                     if (finalStats.mediana > 0) {
-                        if (valor < finalStats.mediana * 0.75) classificacao = 'ABAIXO_DO_LIMITE';
-                        else if (valor > finalStats.mediana * 1.25) classificacao = 'ACIMA_DO_LIMITE';
+                        if (valor < finalStats.mediana * 0.75)
+                            classificacao = 'ABAIXO_DO_LIMITE';
+                        else if (valor > finalStats.mediana * 1.25)
+                            classificacao = 'ACIMA_DO_LIMITE';
                     }
                 }
-
                 return {
                     ...p,
                     percentual_variacao,
                     classificacao
                 };
             });
-
             // 6. Calculate total based on the FINAL median (which matches the visual report)
             const valor_estimado_total = Number((finalStats.mediana * Number(item.quantidade)).toFixed(2));
-
             return {
                 ...item,
                 observacoes: item.observacoes
@@ -165,28 +144,23 @@ export class MarketAnalysisReportService {
                 filterApplied: filterType
             };
         });
-
         // Load logo as base64 if exists
         let logoBase64 = '';
-        const logoPath = path.resolve(__dirname, '../../uploads', 'logo-tjgo.png');
-        console.log('Logo path:', logoPath, 'Exists:', fs.existsSync(logoPath));
-        if (fs.existsSync(logoPath)) {
-            const logoBuffer = fs.readFileSync(logoPath);
+        const logoPath = path_1.default.resolve(__dirname, '../../uploads', 'logo-tjgo.png');
+        console.log('Logo path:', logoPath, 'Exists:', fs_1.default.existsSync(logoPath));
+        if (fs_1.default.existsSync(logoPath)) {
+            const logoBuffer = fs_1.default.readFileSync(logoPath);
             logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
         }
-
         // Generate HTML
         const html = this.generateHtml(demanda, itensComEstatisticas, logoBase64);
-
         // Launch puppeteer and generate PDF
-        const browser = await puppeteer.launch({
+        const browser = await puppeteer_1.default.launch({
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
-
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'networkidle0' });
-
         const pdf = await page.pdf({
             format: 'A4',
             margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' },
@@ -200,28 +174,22 @@ export class MarketAnalysisReportService {
                 </div>
             `
         });
-
         await browser.close();
-
         return Buffer.from(pdf);
     }
-
-    private generateHtml(demanda: any, itensComEstatisticas: any[], logoBase64: string): string {
+    generateHtml(demanda, itensComEstatisticas, logoBase64) {
         const dataEmissao = new Date().toLocaleDateString('pt-BR');
         const dateFull = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
-        const valorTotal = itensComEstatisticas.reduce(
-            (acc, item) => acc + Number(item.valor_estimado_total || 0), 0
-        );
-
+        const valorTotal = itensComEstatisticas.reduce((acc, item) => acc + Number(item.valor_estimado_total || 0), 0);
         // Logo HTML - show image if available, otherwise show nothing
         const logoHtml = logoBase64
             ? `<img src="${logoBase64}" alt="Logo" style="width: 50px; height: auto; margin-bottom: 8pt;"/>`
             : '';
-
         // Reference helper
-        const references: string[] = [];
-        const getRefIndex = (link: string | null) => {
-            if (!link) return null;
+        const references = [];
+        const getRefIndex = (link) => {
+            if (!link)
+                return null;
             let idx = references.indexOf(link);
             if (idx === -1) {
                 references.push(link);
@@ -229,7 +197,6 @@ export class MarketAnalysisReportService {
             }
             return idx + 1;
         };
-
         return `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -645,7 +612,7 @@ export class MarketAnalysisReportService {
                         </tr>
                     </thead>
                     <tbody>
-                        ${item.precos.map((p: any) => `
+                        ${item.precos.map((p) => `
                         <tr class="${p.classificacao === 'ACEITO' ? 'price-aceito' : p.classificacao === 'ACIMA_DO_LIMITE' ? 'price-acima' : 'price-abaixo'}">
                             <td>${p.fonte}${p.link_fonte ? ` <sup style="color: #1e3a5f; font-weight: bold;">[${getRefIndex(p.link_fonte)}]</sup>` : ''}</td>
                             <td>${(p.tipo_fonte || '').replace(/_/g, ' ')}</td>
@@ -687,6 +654,9 @@ export class MarketAnalysisReportService {
                     <p style="margin-top: 4pt; white-space: pre-wrap; text-align: justify;">${demanda.observacoes}</p>
                 </div>
                 ` : ''}
+                ${itensComEstatisticas.filter(i => i.observacoes).map(item => `
+                <p style="margin-bottom: 8pt; text-align: justify;"><strong>Item ${item.codigo_item} (${item.descricao.substring(0, 50)}${item.descricao.length > 50 ? '...' : ''}):</strong> ${item.observacoes}</p>
+                `).join('')}
             </div>
         </div>
         ` : ''}
@@ -730,3 +700,4 @@ export class MarketAnalysisReportService {
         `;
     }
 }
+exports.MarketAnalysisReportService = MarketAnalysisReportService;

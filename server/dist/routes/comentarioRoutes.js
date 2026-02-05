@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.comentarioRoutes = void 0;
+const express_1 = require("express");
+const comentarioController_1 = require("../controllers/comentarioController");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const comentarioRoutes = (0, express_1.Router)();
+exports.comentarioRoutes = comentarioRoutes;
+const comentarioController = new comentarioController_1.ComentarioController();
+comentarioRoutes.use(authMiddleware_1.authMiddleware);
+comentarioRoutes.get('/', comentarioController.list);
+comentarioRoutes.post('/', comentarioController.create);
+comentarioRoutes.put('/:id', comentarioController.update);
+comentarioRoutes.delete('/:id', comentarioController.delete);

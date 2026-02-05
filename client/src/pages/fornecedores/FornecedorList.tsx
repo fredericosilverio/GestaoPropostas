@@ -182,7 +182,7 @@ export function FornecedorList() {
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => navigate('/fornecedores/novo')}
+                    onClick={() => navigate('/fornecedores/new')}
                 >
                     Novo Fornecedor
                 </Button>
@@ -225,7 +225,7 @@ export function FornecedorList() {
                     description="Comece cadastrando seu primeiro fornecedor."
                     action={{
                         label: 'Novo Fornecedor',
-                        onClick: () => navigate('/fornecedores/novo')
+                        onClick: () => navigate('/fornecedores/new')
                     }}
                 />
             ) : (
