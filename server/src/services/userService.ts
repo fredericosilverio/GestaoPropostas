@@ -18,6 +18,19 @@ export class UserService {
         });
     }
 
+    async listActive() {
+        return prisma.usuario.findMany({
+            where: { ativo: true },
+            select: {
+                id: true,
+                nome_completo: true,
+                email: true,
+                perfil: true
+            },
+            orderBy: { nome_completo: 'asc' }
+        });
+    }
+
     async findById(id: number) {
         const user = await prisma.usuario.findUnique({
             where: { id },

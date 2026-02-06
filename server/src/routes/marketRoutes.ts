@@ -15,6 +15,7 @@ precoRoutes.use(authMiddleware);
 
 // Items
 itemRoutes.get('/', itemController.list);
+itemRoutes.get('/:id', itemController.get);
 itemRoutes.post('/', itemController.create);
 itemRoutes.put('/:id', itemController.update);
 itemRoutes.delete('/:id', itemController.delete);

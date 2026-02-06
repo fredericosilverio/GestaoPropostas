@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: gestao-propostas-server
+    ports:
+      - "3333:3333"
+    volumes:
+      # Persistência do Banco de Dados SQLite
+      - ./server/prisma:/app/prisma
+      # Persistência de Uploads
+      - ./server/uploads:/app/uploads
+    environment:
+      - PORT=3333
+      - DATABASE_URL=file:./dev.db
+      - JWT_SECRET=${JWT_SECRET:-secret_dev_key}
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:3333
+    container_name: gestao-propostas-client
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    restart: unless-stopped

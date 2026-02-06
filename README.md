@@ -1,4 +1,3 @@
-# Sistema de Gestão de Propostas e Análise de Mercado
 
 Este sistema foi desenvolvido para a Administração Pública (Estado de Goiás) com o objetivo de gerenciar o **Plano de Contratações Anual (PCA)** e realizar **análises de mercado** para estimativa de preços em processos licitatórios, garantindo conformidade com o **Decreto Estadual nº 9.900/2021**.
 
@@ -69,6 +68,28 @@ cd client
 npm run dev
 ```
 
+### 🐳 Instalação com Docker (Recomendado)
+O sistema está preparado para rodar em containers, o que facilita o deploy e garante que o ambiente seja idêntico para todos.
+
+**Pré-requisitos:**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e configurado.
+
+**Como rodar:**
+1. Abra o terminal na raiz do projeto.
+2. Execute o comando:
+   ```bash
+   docker-compose up --build -d
+   ```
+3. O sistema estará disponível em:
+   - **Frontend:** [http://localhost](http://localhost) (Porta 80)
+   - **Backend API:** [http://localhost:3333](http://localhost:3333)
+
+**Notas importantes:**
+- O banco de dados SQLite e os arquivos de upload são persistidos através de volumes do Docker.
+- O frontend em Docker utiliza **Nginx** para alta performance.
+
+
+
 ## ⚖️ Conformidade Legal
 O sistema implementa rigorosamente a metodologia do **Decreto Estadual nº 9.900/2021 (Art. 6º)**, utilizando a mediana dos valores obtidos e fixando o intervalo de variação de 25% para validação de preços.
 
@@ -77,5 +98,3 @@ O sistema implementa rigorosamente a metodologia do **Decreto Estadual nº 9.900
 - `/client`: Interface Web React e componentes visuais.
 - `/docs` (ou PRDs na raiz): Documentação técnica e de requisitos completa.
 
----
-Desenvolvido para modernizar e dar transparência às contratações públicas.

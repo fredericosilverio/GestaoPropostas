@@ -83,9 +83,11 @@ export default function App() {
               {/* Demandas */}
               <Route path="/demandas" element={<PrivateLayout><DemandaList /></PrivateLayout>} />
               <Route path="/demandas/new" element={<PrivateLayout><DemandaForm /></PrivateLayout>} />
+              <Route path="/demandas/:id/edit" element={<PrivateLayout><DemandaForm /></PrivateLayout>} />
               <Route path="/demandas/:id" element={<PrivateLayout><DemandaDetail /></PrivateLayout>} />
               <Route path="/demandas/:id/proposta-lote" element={<PrivateLayout><ProposalEntry /></PrivateLayout>} />
               <Route path="/demandas/:demandaId/itens/novo" element={<PrivateLayout><ItemForm /></PrivateLayout>} />
+              <Route path="/demandas/:demandaId/itens/:itemId/edit" element={<PrivateLayout><ItemForm /></PrivateLayout>} />
 
               {/* Items & Prices */}
               <Route path="/itens/:itemId/precos" element={<PrivateLayout><PriceManager /></PrivateLayout>} />

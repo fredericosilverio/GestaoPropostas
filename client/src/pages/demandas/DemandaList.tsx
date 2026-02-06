@@ -7,8 +7,7 @@ import {
   TextField,
   Typography,
   InputAdornment,
-  Chip,
-  IconButton
+  Chip
 } from '@mui/material';
 import {
   DataGrid,
@@ -24,8 +23,7 @@ import {
   Add as AddIcon,
   Search as SearchIcon,
   Edit as EditIcon,
-  Visibility as VisibilityIcon,
-  Close as CloseIcon
+  Visibility as VisibilityIcon
 } from '@mui/icons-material';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
@@ -141,7 +139,7 @@ export function DemandaList() {
         <GridActionsCellItem
           icon={<EditIcon />}
           label="Editar"
-          onClick={() => navigate(`/demandas/${params.id}`)} // Usually edit is inside detail or specific edit route
+          onClick={() => navigate(`/demandas/${params.id}/edit`)}
           showInMenu={false}
         />
       ]
