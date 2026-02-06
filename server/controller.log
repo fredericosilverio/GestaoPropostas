@@ -58,4 +58,7 @@ Login Request: {"email":"fsduarte@tjgo.jus.br","password":"admin123"}
 Login Request: {"email":"fsduarte@tjgo.jus.br","password":"admin123"}
 Login Request: {"email":"fsduarte@tjgo.jus.br","password":"admin123"}
 Login Request: {"email":"fsduarte@tjgo.jus.br","password":"admin123"}
+<<<<<<< HEAD
 Login Request: {"email":"fsduarte@tjgo.jus.br","password":"123456"}
+=======
+>>>>>>> 34a50e0d38dea0f38cc98a994d9320db468bd3fe
