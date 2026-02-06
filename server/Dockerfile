@@ -1,15 +1,28 @@
+# Usar uma versão estável do Node no Alpine
 FROM node:22-alpine
 
-WORKDIR /app
+# Instalar dependências necessárias para o Chromium e Prisma (OpenSSL)
+# Adicionamos 'chromium' e as bibliotecas que o Puppeteer exige no Alpine
+RUN apk add --no-cache \
+    openssl \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
 
-# Instalar dependências do sistema necessárias para o Prisma (OpenSSL)
-RUN apk add --no-cache openssl
+# Variáveis de ambiente para o Puppeteer encontrar o Chromium do Alpine
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+WORKDIR /app
 
 # Copiar arquivos de dependências
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Instalar dependências
+# Instalar dependências (omitindo o download do Chromium do npm para economizar espaço)
 RUN npm install
 
 # Copiar o restante do código fonte

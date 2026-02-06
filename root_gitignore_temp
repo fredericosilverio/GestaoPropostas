@@ -36,4 +36,3 @@ build/
 
 # Agent
 .agent/
-server/prisma/dev.db

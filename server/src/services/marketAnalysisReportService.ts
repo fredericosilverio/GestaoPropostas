@@ -62,35 +62,8 @@ export class MarketAnalysisReportService {
                 // Initial Filter
                 let precosAceitos = classifiedPrices.filter((p: any) => p.classificacao === 'ACEITO');
 
-                // Refinement Loop: Ensure that the items used for stats are consistent with the resulting stats
-                // This prevents the "24k is Valid but > 25% of displayed Median" issue.
-                let currentCandidates = precosAceitos;
-                if (currentCandidates.length > 0) {
-                    let stable = false;
-                    let iterations = 0;
-                    
-                    while (!stable && iterations < 3) {
-                        const currentStats = marketAnalysisService.calculateStatistics(currentCandidates);
-                        const lower = currentStats.mediana * 0.75;
-                        const upper = currentStats.mediana * 1.25;
-                        
-                        const nextCandidates = currentCandidates.filter((p: any) => {
-                            const val = Number(p.valor_unitario);
-                            return val >= lower && val <= upper;
-                        });
-                        
-                        if (nextCandidates.length === currentCandidates.length) {
-                            stable = true;
-                        } else {
-                            currentCandidates = nextCandidates;
-                            if (currentCandidates.length === 0) break;
-                        }
-                        iterations++;
-                    }
-                }
-
-                if (currentCandidates.length > 0) {
-                    precosParaCalculo = currentCandidates;
+                if (precosAceitos.length > 0) {
+                    precosParaCalculo = precosAceitos;
                 } else if (filterType === 'median25fallback') {
                     precosParaCalculo = classifiedPrices;
                     isFallbackScenario = true;
@@ -105,7 +78,8 @@ export class MarketAnalysisReportService {
             const finalStats = {
                 ...rawStats,
                 media: rawStats.media ? Number(rawStats.media.toFixed(2)) : 0,
-                mediana: rawStats.mediana ? Number(rawStats.mediana.toFixed(2)) : 0,
+                // A mediana para exibição e classificação de variação deve sempre ser a mediana de TODOS os valores (baseStats)
+                mediana: baseStats.mediana ? Number(baseStats.mediana.toFixed(2)) : 0,
                 desvioPadrao: rawStats.desvioPadrao ? Number(rawStats.desvioPadrao.toFixed(2)) : 0,
                 cv: rawStats.cv ? Number(rawStats.cv.toFixed(2)) : 0,
                 min: rawStats.min ? Number(rawStats.min.toFixed(2)) : 0,
@@ -116,14 +90,14 @@ export class MarketAnalysisReportService {
             const precosFinalizados = classifiedPrices.map((p: any) => {
                 const isUsed = precosParaCalculo.some((pc: any) => pc.id === p.id);
                 const valor = Number(p.valor_unitario);
-                
+
                 // Recalculate variation relative to the FINAL median
                 const percentual_variacao = finalStats.mediana > 0
                     ? ((valor - finalStats.mediana) / finalStats.mediana) * 100
                     : 0;
 
                 let classificacao = p.classificacao;
-                
+
                 // Update classification to match the visual report logic
                 if (isUsed) {
                     // Only mark as 'ACEITO' if NOT in fallback scenario.
@@ -149,8 +123,8 @@ export class MarketAnalysisReportService {
                 };
             });
 
-            // 6. Calculate total based on the FINAL median (which matches the visual report)
-            const valor_estimado_total = Number((finalStats.mediana * Number(item.quantidade)).toFixed(2));
+            // 6. Calculate total based on the FINAL mean (as per new requirements)
+            const valor_estimado_total = Number((finalStats.media * Number(item.quantidade)).toFixed(2));
 
             return {
                 ...item,
@@ -160,8 +134,8 @@ export class MarketAnalysisReportService {
                 precos: precosFinalizados,
                 precosParaCalculo: precosParaCalculo,
                 estatisticas: finalStats,
-                valor_estimado_unitario: finalStats.mediana, // Override database value with calculated final median
-                valor_estimado_total: valor_estimado_total, // Override the database value with calculated value
+                valor_estimado_unitario: finalStats.media, // Override database value with calculated final mean (per rule 4)
+                valor_estimado_total: valor_estimado_total, // Override the database value with calculated value (per rule 5)
                 filterApplied: filterType
             };
         });
@@ -574,8 +548,8 @@ export class MarketAnalysisReportService {
             <h3 class="section-title">2. Metodologia</h3>
             <div class="methodology">
                 <p><strong>Base Legal:</strong> Relatório elaborado conforme Lei Federal nº 14.133/2021 e Decreto Estadual nº 9.900/2021.</p>
-                <p><strong>Critério de Aceitação:</strong> Preços válidos dentro do intervalo de ±25% em relação à mediana.</p>
-                <p><strong>Valor de Referência:</strong> Mediana dos preços válidos, reduzindo influência de outliers.</p>
+                <p><strong>Critério de Aceitação:</strong> Preços válidos dentro do intervalo de ±25% em relação à mediana de todos os valores disponíveis.</p>
+                <p><strong>Valor de Referência:</strong> Média aritmética dos preços válidos (aceitos).</p>
                 <p><strong>Fontes:</strong> Painel de Preços (ComprasNet/PNCP), Atas de RP, NFs similares e Cotações de fornecedores.</p>
             </div>
         </div>
@@ -602,7 +576,7 @@ export class MarketAnalysisReportService {
                         <td>${item.descricao}</td>
                         <td style="text-align: center;">${item.unidade_medida}</td>
                         <td style="text-align: center;">${Number(item.quantidade).toLocaleString('pt-BR')}</td>
-                        <td class="currency" style="text-align: right;">R$ ${Number(item.valor_estimado_unitario || item.estatisticas.mediana || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td class="currency" style="text-align: right;">R$ ${Number(item.valor_estimado_unitario || item.estatisticas.media || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td class="currency" style="text-align: right; font-weight: bold; color: #1e3a5f;">R$ ${Number(item.valor_estimado_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                     `).join('')}
@@ -659,7 +633,6 @@ export class MarketAnalysisReportService {
                 </table>
                 
                 <div class="stats-line">
-                    <div class="stat"><div class="stat-value">R$ ${Number(item.estatisticas.media || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div class="stat-label">Média</div></div>
                     <div class="stat"><div class="stat-value">R$ ${Number(item.estatisticas.mediana || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div class="stat-label">Mediana</div></div>
                     <div class="stat interval-box">
                         <div class="stat-value">
@@ -669,6 +642,7 @@ export class MarketAnalysisReportService {
                         </div>
                         <div class="stat-label">Intervalo Aceitável (Mediana ±25%)</div>
                     </div>
+                    <div class="stat" style="border: 2px solid #1e3a5f; padding: 2px 5px; border-radius: 4px;"><div class="stat-value">R$ ${Number(item.estatisticas.media || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div class="stat-label" style="color: #1e3a5f; font-weight: bold;">Média</div></div>
                     <div class="stat total-box"><div class="stat-value">R$ ${Number(item.valor_estimado_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div class="stat-label">Total Item</div></div>
                 </div>
                 ${item.observacoes ? `<div style="margin-top: 6pt; padding: 6pt 8pt; background: #fffbeb; border-left: 3px solid #f59e0b; font-size: 9pt; font-style: italic; print-color-adjust: exact; -webkit-print-color-adjust: exact; text-align: justify;"><strong>Obs.:</strong> ${item.observacoes}</div>` : ''}
