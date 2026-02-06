@@ -177,6 +177,15 @@ export function DemandaDetail() {
                         />
                         <Button
                             variant="contained"
+                            color="info"
+                            startIcon={<EditIcon />}
+                            onClick={() => navigate(`/demandas/${id}/edit`)}
+                            size="small"
+                        >
+                            Editar
+                        </Button>
+                        <Button
+                            variant="contained"
                             color="primary"
                             startIcon={<DescriptionIcon />}
                             onClick={() => navigate(`/reports/market-analysis/${id}`)}
@@ -209,29 +218,25 @@ export function DemandaDetail() {
                         Itens da Demanda ({demanda.itens.length})
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                        {['RASCUNHO', 'CADASTRADA', 'EM_ANALISE', 'EM_COTACAO'].includes(demanda.status) && (
-                            <>
-                                <Button
-                                    variant="contained"
-                                    color="success"
-                                    startIcon={<AddIcon />}
-                                    onClick={() => navigate(`/demandas/${id}/itens/novo`)}
-                                    size="small"
-                                >
-                                    Novo Item
-                                </Button>
-                                {demanda.status === 'RASCUNHO' && (
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        startIcon={<CheckCircleIcon />}
-                                        onClick={() => setShowInitiateModal(true)}
-                                        size="small"
-                                    >
-                                        Publicar Demanda
-                                    </Button>
-                                )}
-                            </>
+                        <Button
+                            variant="contained"
+                            color="success"
+                            startIcon={<AddIcon />}
+                            onClick={() => navigate(`/demandas/${id}/itens/novo`)}
+                            size="small"
+                        >
+                            Novo Item
+                        </Button>
+                        {demanda.status === 'RASCUNHO' && (
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                startIcon={<CheckCircleIcon />}
+                                onClick={() => setShowInitiateModal(true)}
+                                size="small"
+                            >
+                                Publicar Demanda
+                            </Button>
                         )}
                     </Box>
                 </Box>
@@ -294,14 +299,24 @@ export function DemandaDetail() {
                                         </Tooltip>
                                     </TableCell>
                                     <TableCell align="right">
-                                        <Button
-                                            variant="text"
-                                            size="small"
-                                            startIcon={<AttachMoneyIcon />}
-                                            onClick={() => navigate(`/itens/${item.id}/precos`)}
-                                        >
-                                            Gerenciar Preços
-                                        </Button>
+                                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+                                            <IconButton
+                                                size="small"
+                                                color="info"
+                                                onClick={() => navigate(`/demandas/${id}/itens/${item.id}/edit`)}
+                                                title="Editar Item"
+                                            >
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                            <Button
+                                                variant="text"
+                                                size="small"
+                                                startIcon={<AttachMoneyIcon />}
+                                                onClick={() => navigate(`/itens/${item.id}/precos`)}
+                                            >
+                                                Preços
+                                            </Button>
+                                        </Box>
                                     </TableCell>
                                 </TableRow>
                             ))}

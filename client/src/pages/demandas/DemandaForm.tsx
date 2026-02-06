@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     Box,
     Button,
@@ -23,10 +24,21 @@ interface PcaOption {
     versao: number;
 }
 
+interface UserOption {
+    id: number;
+    nome_completo: string;
+    email: string;
+}
+
 export function DemandaForm() {
+    const { id } = useParams();
+    const isEditing = !!id;
+    const { user } = useAuth();
+    
     const [pcaId, setPcaId] = useState('');
     const [pcas, setPcas] = useState<PcaOption[]>([]);
-
+    const [usuarios, setUsuarios] = useState<UserOption[]>([]);
+    
     // Form Fields
     const [codigoDemanda, setCodigoDemanda] = useState('');
     const [descricao, setDescricao] = useState('');
@@ -36,6 +48,7 @@ export function DemandaForm() {
     const [centroCusto, setCentroCusto] = useState('');
     const [prazoVigencia, setPrazoVigencia] = useState('');
     const [dataPrevista, setDataPrevista] = useState('');
+    const [responsavelId, setResponsavelId] = useState<string | number>('');
 
     // Default enums
     const [tipoContratacao, setTipoContratacao] = useState('NOVA');
@@ -50,16 +63,79 @@ export function DemandaForm() {
 
     useEffect(() => {
         loadPcas();
+        loadUsuarios();
     }, []);
+
+    useEffect(() => {
+        if (id) {
+            loadDemanda(id);
+        } else if (user) {
+            // Se for criação, define responsável como o usuário logado por padrão
+            setResponsavelId(user.id);
+        }
+    }, [id, user]);
 
     async function loadPcas() {
         try {
             const response = await api.get('/pcas');
-            // Filter only active PCAs if needed
             setPcas(response.data);
         } catch (err) {
             console.error("Failed to load PCAs");
             addToast({ type: 'error', title: 'Erro', description: 'Falha ao carregar PCAs' });
+        }
+    }
+
+    async function loadUsuarios() {
+        try {
+            const response = await api.get('/users/active');
+            setUsuarios(response.data);
+        } catch (err: any) {
+            console.error("Failed to load Users", err);
+            addToast({ type: 'error', title: 'Erro', description: `Falha ao carregar Usuários: ${err.message}` });
+        }
+    }
+
+    async function loadDemanda(demandaId: string) {
+        setLoading(true);
+        try {
+            const response = await api.get(`/demandas/${demandaId}`);
+            const d = response.data;
+            
+            setPcaId(d.pca_id);
+            setCodigoDemanda(d.codigo_demanda);
+            setDescricao(d.descricao);
+            
+            // Format currency
+            if (d.valor_estimado_global) {
+                const val = new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                }).format(d.valor_estimado_global);
+                setValorEstimado(val);
+            }
+            
+            setJustificativaTecnica(d.justificativa_tecnica);
+            setJustificativaAdministrativa(d.justificativa_administrativa);
+            setCentroCusto(d.centro_custo);
+            setPrazoVigencia(d.prazo_vigencia_meses);
+            
+            // Format date YYYY-MM-DD
+            if (d.data_prevista_contratacao) {
+                const date = new Date(d.data_prevista_contratacao);
+                setDataPrevista(date.toISOString().split('T')[0]);
+            }
+            
+            setTipoContratacao(d.tipo_contratacao);
+            setNaturezaDespesa(d.natureza_despesa);
+            setElementoDespesa(d.elemento_despesa);
+            setUnidadeDemandante(d.unidade_demandante);
+            setResponsavelId(d.responsavel_id);
+
+        } catch (err) {
+            setError('Erro ao carregar dados da demanda');
+            addToast({ type: 'error', title: 'Erro', description: 'Erro ao carregar dados' });
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -89,7 +165,7 @@ export function DemandaForm() {
             return;
         }
 
-        if (new Date(dataPrevista) < new Date()) {
+        if (new Date(dataPrevista) < new Date() && !isEditing) {
             setError('A data prevista deve ser futura.');
             setLoading(false);
             return;
@@ -100,26 +176,35 @@ export function DemandaForm() {
             ? Number(valorEstimado.replace(/[^0-9,-]+/g, "").replace(",", "."))
             : null;
 
+        const payload = {
+            pca_id: Number(pcaId),
+            codigo_demanda: codigoDemanda,
+            descricao,
+            valor_estimado_global: valorNumerico,
+            justificativa_tecnica: justificativaTecnica,
+            justificativa_administrativa: justificativaAdministrativa,
+            centro_custo: centroCusto,
+            prazo_vigencia_meses: Number(prazoVigencia),
+            data_prevista_contratacao: new Date(dataPrevista),
+            tipo_contratacao: tipoContratacao,
+            natureza_despesa: naturezaDespesa,
+            elemento_despesa: elementoDespesa,
+            unidade_demandante: unidadeDemandante,
+            responsavel_id: responsavelId ? Number(responsavelId) : undefined
+        };
+
         try {
-            await api.post('/demandas', {
-                pca_id: Number(pcaId),
-                codigo_demanda: codigoDemanda,
-                descricao,
-                valor_estimado_global: valorNumerico,
-                justificativa_tecnica: justificativaTecnica,
-                justificativa_administrativa: justificativaAdministrativa,
-                centro_custo: centroCusto,
-                prazo_vigencia_meses: Number(prazoVigencia),
-                data_prevista_contratacao: new Date(dataPrevista),
-                tipo_contratacao: tipoContratacao,
-                natureza_despesa: naturezaDespesa,
-                elemento_despesa: elementoDespesa,
-                unidade_demandante: unidadeDemandante
-            });
-            addToast({ type: 'success', title: 'Sucesso', description: 'Demanda criada com sucesso!' });
-            navigate('/demandas');
+            if (isEditing) {
+                await api.put(`/demandas/${id}`, payload);
+                addToast({ type: 'success', title: 'Sucesso', description: 'Demanda atualizada com sucesso!' });
+                navigate(`/demandas/${id}`);
+            } else {
+                await api.post('/demandas', payload);
+                addToast({ type: 'success', title: 'Sucesso', description: 'Demanda criada com sucesso!' });
+                navigate('/demandas');
+            }
         } catch (err: any) {
-            const msg = err.response?.data?.error || 'Erro ao criar Demanda';
+            const msg = err.response?.data?.error || 'Erro ao salvar Demanda';
             setError(msg);
             addToast({ type: 'error', title: 'Erro', description: msg });
         } finally {
@@ -127,11 +212,19 @@ export function DemandaForm() {
         }
     }
 
+    if (loading && isEditing && !codigoDemanda) {
+        return (
+            <Container maxWidth="md" sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
+                <CircularProgress />
+            </Container>
+        );
+    }
+
     return (
         <Container maxWidth="md" sx={{ py: 4 }}>
             <Paper elevation={2} sx={{ p: 4 }}>
                 <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-                    Nova Demanda
+                    {isEditing ? 'Editar Demanda' : 'Nova Demanda'}
                 </Typography>
 
                 {error && (
@@ -150,6 +243,7 @@ export function DemandaForm() {
                                 value={pcaId}
                                 onChange={e => setPcaId(e.target.value)}
                                 required
+                                disabled={isEditing}
                             >
                                 <MenuItem value="">
                                     <em>Selecione...</em>
@@ -168,17 +262,50 @@ export function DemandaForm() {
                                 label="Código da Demanda"
                                 value={codigoDemanda}
                                 onChange={e => setCodigoDemanda(e.target.value)}
-                                placeholder="Ex: D-2026/001"
-                                required
+                                placeholder="Gerado automaticamente"
+                                disabled={isEditing || true} // Always disabled as backend generates/updates it
+                                helperText={!isEditing ? "Gerado automaticamente ao salvar" : ""}
                             />
                         </Grid>
 
-                        <Grid size={{ xs: 12, md: 4 }}>
+                        <Grid size={{ xs: 12, md: 6 }}>
                             <TextField
                                 fullWidth
                                 label="Unidade Demandante"
                                 value={unidadeDemandante}
                                 onChange={e => setUnidadeDemandante(e.target.value)}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                                select
+                                fullWidth
+                                label="Responsável pela Análise"
+                                value={responsavelId}
+                                onChange={e => setResponsavelId(e.target.value)}
+                                required
+                            >
+                                <MenuItem value="">
+                                    <em>Selecione...</em>
+                                </MenuItem>
+                                {usuarios.map(u => (
+                                    <MenuItem key={u.id} value={u.id}>
+                                        {u.nome_completo}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Grid>
+
+                        <Grid size={12}>
+                            <TextField
+                                fullWidth
+                                label="Objeto (Descrição Resumida)"
+                                value={descricao}
+                                onChange={e => setDescricao(e.target.value)}
+                                multiline
+                                rows={3}
                                 required
                             />
                         </Grid>
@@ -193,14 +320,22 @@ export function DemandaForm() {
                             />
                         </Grid>
 
-                        <Grid size={12}>
+                        <Grid size={{ xs: 12, md: 4 }}>
                             <TextField
                                 fullWidth
-                                label="Objeto (Descrição Resumida)"
-                                value={descricao}
-                                onChange={e => setDescricao(e.target.value)}
-                                multiline
-                                rows={3}
+                                label="Centro de Custo"
+                                value={centroCusto}
+                                onChange={e => setCentroCusto(e.target.value)}
+                                required
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <TextField
+                                fullWidth
+                                label="Elemento de Despesa"
+                                value={elementoDespesa}
+                                onChange={e => setElementoDespesa(e.target.value)}
                                 required
                             />
                         </Grid>
@@ -225,26 +360,6 @@ export function DemandaForm() {
                                 onChange={e => setJustificativaAdministrativa(e.target.value)}
                                 multiline
                                 rows={4}
-                                required
-                            />
-                        </Grid>
-
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField
-                                fullWidth
-                                label="Centro de Custo"
-                                value={centroCusto}
-                                onChange={e => setCentroCusto(e.target.value)}
-                                required
-                            />
-                        </Grid>
-
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <TextField
-                                fullWidth
-                                label="Elemento de Despesa"
-                                value={elementoDespesa}
-                                onChange={e => setElementoDespesa(e.target.value)}
                                 required
                             />
                         </Grid>
@@ -304,7 +419,7 @@ export function DemandaForm() {
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4, pt: 2, borderTop: 1, borderColor: 'divider' }}>
                         <Button
                             variant="outlined"
-                            onClick={() => navigate('/demandas')}
+                            onClick={() => navigate(isEditing ? `/demandas/${id}` : '/demandas')}
                             startIcon={<ArrowBackIcon />}
                         >
                             Cancelar

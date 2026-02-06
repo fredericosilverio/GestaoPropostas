@@ -141,7 +141,7 @@ export function DemandaList() {
         <GridActionsCellItem
           icon={<EditIcon />}
           label="Editar"
-          onClick={() => navigate(`/demandas/${params.id}`)} // Usually edit is inside detail or specific edit route
+          onClick={() => navigate(`/demandas/${params.id}/edit`)}
           showInMenu={false}
         />
       ]

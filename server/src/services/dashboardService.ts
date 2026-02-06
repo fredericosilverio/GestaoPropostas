@@ -3,9 +3,26 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export class DashboardService {
-    async getSummary(pcaId?: number) {
+    async getSummary(pcaId?: number, startDate?: Date, endDate?: Date) {
         // Filter by PCA if provided, otherwise all or current year
-        const whereClause = pcaId ? { pca_id: pcaId } : {};
+        const whereClause: any = {};
+
+        if (pcaId) {
+            whereClause.pca_id = pcaId;
+        }
+
+        if (startDate || endDate) {
+            whereClause.data_prevista_contratacao = {};
+            if (startDate) {
+                whereClause.data_prevista_contratacao.gte = startDate;
+            }
+            if (endDate) {
+                // Adjust endDate to include the full day if it's just a date without time
+                const adjustedEndDate = new Date(endDate);
+                adjustedEndDate.setUTCHours(23, 59, 59, 999);
+                whereClause.data_prevista_contratacao.lte = adjustedEndDate;
+            }
+        }
 
         // 1. Counts by Status
         const statusGroups = await prisma.demanda.groupBy({
