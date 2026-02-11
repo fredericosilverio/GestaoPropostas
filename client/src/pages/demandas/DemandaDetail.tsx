@@ -28,7 +28,8 @@ import {
     Assignment as AssignmentIcon,
     AttachMoney as AttachMoneyIcon,
     NoteAdd as NoteAddIcon,
-    CheckCircle as CheckCircleIcon
+    CheckCircle as CheckCircleIcon,
+    Delete as DeleteIcon
 } from '@mui/icons-material';
 import { api } from '../../services/api';
 import { InitiateContractingModal, FinalizeContractModal } from './ContractingModals';
@@ -82,6 +83,10 @@ export function DemandaDetail() {
     const [editingObsItemId, setEditingObsItemId] = useState<number | null>(null);
     const [obsText, setObsText] = useState('');
     const [savingObs, setSavingObs] = useState(false);
+
+    // Delete item state
+    const [itemToDelete, setItemToDelete] = useState<Item | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // General observations state
     const [editingGeneralObs, setEditingGeneralObs] = useState(false);
@@ -141,6 +146,22 @@ export function DemandaDetail() {
         }
     }
 
+    async function handleDeleteItem() {
+        if (!itemToDelete) return;
+        setIsDeleting(true);
+        try {
+            await api.delete(`/itens/${itemToDelete.id}`);
+            addToast({ type: 'success', title: 'Sucesso', description: 'Item excluído com sucesso!' });
+            setItemToDelete(null);
+            loadDemanda();
+        } catch (error) {
+            console.error('Erro ao excluir item', error);
+            addToast({ type: 'error', title: 'Erro', description: 'Não foi possível excluir o item.' });
+        } finally {
+            setIsDeleting(false);
+        }
+    }
+
     if (loading) return <LoadingOverlay message="Carregando detalhes da demanda..." />;
     if (!demanda) return <Box p={3}><Typography>Demanda não encontrada</Typography></Box>;
 
@@ -169,11 +190,11 @@ export function DemandaDetail() {
                         </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <Chip 
-                            label={demanda.status} 
-                            color="primary" 
-                            variant="outlined" 
-                            sx={{ fontWeight: 'bold' }} 
+                        <Chip
+                            label={demanda.status}
+                            color="primary"
+                            variant="outlined"
+                            sx={{ fontWeight: 'bold' }}
                         />
                         <Button
                             variant="contained"
@@ -262,13 +283,13 @@ export function DemandaDetail() {
                                     <TableCell sx={{ maxWidth: 300 }}>
                                         <Typography variant="body2">{item.descricao}</Typography>
                                         {item.observacoes && editingObsItemId !== item.id && (
-                                            <Paper 
-                                                elevation={0} 
-                                                sx={{ 
-                                                    mt: 1, 
-                                                    p: 0.5, 
-                                                    px: 1, 
-                                                    bgcolor: 'warning.light', 
+                                            <Paper
+                                                elevation={0}
+                                                sx={{
+                                                    mt: 1,
+                                                    p: 0.5,
+                                                    px: 1,
+                                                    bgcolor: 'warning.light',
                                                     color: 'warning.contrastText',
                                                     display: 'inline-block',
                                                     fontSize: '0.75rem'
@@ -307,6 +328,14 @@ export function DemandaDetail() {
                                                 title="Editar Item"
                                             >
                                                 <EditIcon fontSize="small" />
+                                            </IconButton>
+                                            <IconButton
+                                                size="small"
+                                                color="error"
+                                                onClick={() => setItemToDelete(item)}
+                                                title="Excluir Item"
+                                            >
+                                                <DeleteIcon fontSize="small" />
                                             </IconButton>
                                             <Button
                                                 variant="text"
@@ -436,6 +465,24 @@ export function DemandaDetail() {
                     <Button onClick={() => setEditingObsItemId(null)} color="inherit">Cancelar</Button>
                     <Button onClick={() => editingObsItemId && saveObservations(editingObsItemId)} variant="contained" disabled={savingObs}>
                         {savingObs ? 'Salvando...' : 'Salvar'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Item Confirmation Dialog */}
+            <Dialog open={!!itemToDelete} onClose={() => setItemToDelete(null)}>
+                <DialogTitle>Excluir Item</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Tem certeza que deseja excluir o item <strong>{itemToDelete?.codigo_item} - {itemToDelete?.descricao}</strong>?
+                        <br /><br />
+                        <strong>Aviso:</strong> Todas as cotações/preços vinculados a este item também serão excluídos. Esta ação não pode ser desfeita.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setItemToDelete(null)} color="inherit" disabled={isDeleting}>Cancelar</Button>
+                    <Button onClick={handleDeleteItem} color="error" variant="contained" disabled={isDeleting}>
+                        {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
                     </Button>
                 </DialogActions>
             </Dialog>

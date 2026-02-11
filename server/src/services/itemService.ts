@@ -83,14 +83,29 @@ export class ItemService {
 
     async delete(id: number, userId: number) {
         const item = await prisma.item.findUnique({ where: { id } });
+        if (!item) throw new Error('Item não encontrado');
+
+        // Log the action
         await auditService.log({
             usuario_id: userId,
             acao: 'EXCLUSAO',
             entidade_tipo: 'ITEM',
             entidade_id: id,
-            descricao: `Item ${item?.codigo_item} excluído.`
+            descricao: `Item ${item.codigo_item} excluído da demanda ${item.demanda_id}.`
         });
-        return prisma.item.delete({ where: { id } });
+
+        // 1. Delete associated prices explicitly (though DB has cascade)
+        await prisma.preco.deleteMany({
+            where: { item_id: id }
+        });
+
+        // 2. Delete the item
+        const deletedItem = await prisma.item.delete({ where: { id } });
+
+        // 3. Trigger check for demand completion or update demand status if needed
+        await this.checkDemandaCompletion(item.demanda_id);
+
+        return deletedItem;
     }
 
     async calculateStats(itemId: number) {
