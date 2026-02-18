@@ -47,7 +47,7 @@ const statusConfig: Record<string, { color: ChipProps['color']; label?: string }
     // Price Classification
     ACEITO: { color: 'success', label: 'Aceito' },
     ACIMA_DO_LIMITE: { color: 'error', label: 'Acima do Limite' },
-    ABAIXO_DO_LIMITE: { color: 'warning', label: 'Abaixo do Limite' },
+    ABAIXO_DO_LIMITE: { color: 'error', label: 'Abaixo do Limite' },
     INVALIDO_DATA: { color: 'default', label: 'Inválido (Data)' },
 };
 

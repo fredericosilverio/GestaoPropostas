@@ -283,7 +283,7 @@ export function ReportPage() {
                                                 <TableCell align="center">
                                                     {preco.classificacao === 'ACEITO' ? '✅ Aceito' :
                                                         preco.classificacao === 'ACIMA_DO_LIMITE' ? '🔴 Acima (+25%)' :
-                                                            preco.classificacao === 'ABAIXO_DO_LIMITE' ? '🟡 Abaixo (-25%)' : '⚪ Inválido'}
+                                                            preco.classificacao === 'ABAIXO_DO_LIMITE' ? '🔴 Abaixo (-25%)' : '⚪ Inválido'}
                                                 </TableCell>
                                             </TableRow>
                                         ))}

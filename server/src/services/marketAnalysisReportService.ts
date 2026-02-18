@@ -380,7 +380,7 @@ export class MarketAnalysisReportService {
         
         .price-aceito { background: #e8f5e9 !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
         .price-acima { background: #ffebee !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-        .price-abaixo { background: #fff8e1 !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+        .price-abaixo { background: #ffebee !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
         
         /* Estatísticas em Linha */
         .stats-line {
