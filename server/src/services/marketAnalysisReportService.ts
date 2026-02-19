@@ -142,9 +142,26 @@ export class MarketAnalysisReportService {
 
         // Load logo as base64 if exists
         let logoBase64 = '';
-        const logoPath = path.resolve(__dirname, '../../uploads', 'logo-tjgo.png');
-        console.log('Logo path:', logoPath, 'Exists:', fs.existsSync(logoPath));
-        if (fs.existsSync(logoPath)) {
+
+        // Try multiple paths to find the logo (Docker vs Local vs Dist)
+        const possiblePaths = [
+            path.resolve(process.cwd(), 'uploads', 'logo-tjgo.png'),
+            path.resolve(__dirname, '../../uploads', 'logo-tjgo.png'),
+            path.resolve(__dirname, '../../../uploads', 'logo-tjgo.png'),
+            path.join('/app/uploads', 'logo-tjgo.png') // Direct Docker path fallback
+        ];
+
+        let logoPath = '';
+        for (const p of possiblePaths) {
+            if (fs.existsSync(p)) {
+                logoPath = p;
+                break;
+            }
+        }
+
+        console.log('PDF Logo lookup:', logoPath ? `Found at ${logoPath}` : 'Not found in any expected location');
+
+        if (logoPath) {
             const logoBuffer = fs.readFileSync(logoPath);
             logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
         }
@@ -189,7 +206,7 @@ export class MarketAnalysisReportService {
 
         // Logo HTML - show image if available, otherwise show nothing
         const logoHtml = logoBase64
-            ? `<img src="${logoBase64}" alt="Logo" style="width: 50px; height: auto; margin-bottom: 8pt;"/>`
+            ? `<img src="${logoBase64}" alt="Logo" style="width: 80px; height: auto; margin-bottom: 5pt;"/>`
             : '';
 
         // Reference helper
@@ -202,6 +219,21 @@ export class MarketAnalysisReportService {
                 idx = references.length - 1;
             }
             return idx + 1;
+        };
+
+        // Formatting helpers
+        const capitalize = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '';
+
+        const getTipoFonteLabel = (tipo: string) => {
+            const mapping: Record<string, string> = {
+                'COTACAO_FORNECEDOR': 'Cotação de Fornecedor',
+                'PAINEL_PRECOS': 'Painel de Preços',
+                'BANCO_PRECOS': 'Banco de Preços',
+                'CONTRATACAO_SIMILAR': 'Contratação Similar',
+                'NOTA_FISCAL': 'Nota Fiscal',
+                'OUTROS': 'Outros'
+            };
+            return mapping[tipo] || (tipo ? capitalize(tipo.replace(/_/g, ' ')) : 'N/I');
         };
 
         return `
@@ -267,7 +299,6 @@ export class MarketAnalysisReportService {
             margin-bottom: 12pt;
             padding-bottom: 4pt;
             border-bottom: 1.5px solid #1e3a5f;
-            text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         
@@ -291,7 +322,6 @@ export class MarketAnalysisReportService {
             font-weight: bold;
             color: #333;
             font-size: 9pt;
-            text-transform: uppercase;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
         }
@@ -362,7 +392,6 @@ export class MarketAnalysisReportService {
             background: #f0f0f0;
             font-weight: bold;
             font-size: 8.5pt;
-            text-transform: uppercase;
             padding: 3pt 4pt;
             border: 1px solid #ccc;
             text-align: left;
@@ -600,7 +629,7 @@ export class MarketAnalysisReportService {
             
             ${itensComEstatisticas.map((item, idx) => `
             <div class="item-block">
-                <div class="item-title">4.${item.codigo_item} – ${item.descricao}</div>
+                <div class="item-title">4.${item.codigo_item} - ${item.descricao} (Item ${item.codigo_item}).</div>
                 <div class="item-meta">
                     <span><strong>Unid.:</strong> ${item.unidade_medida}</span>
                     <span><strong>Qtd.:</strong> ${Number(item.quantidade).toLocaleString('pt-BR')}</span>
@@ -620,9 +649,9 @@ export class MarketAnalysisReportService {
                     </thead>
                     <tbody>
                         ${item.precos.map((p: any) => `
-                        <tr class="${p.classificacao === 'ACEITO' ? 'price-aceito' : p.classificacao === 'ACIMA_DO_LIMITE' ? 'price-acima' : 'price-abaixo'}">
-                            <td>${p.fonte}${p.link_fonte ? ` <sup style="color: #1e3a5f; font-weight: bold;">[${getRefIndex(p.link_fonte)}]</sup>` : ''}</td>
-                            <td>${(p.tipo_fonte || '').replace(/_/g, ' ')}</td>
+                        <tr class="${p.classificacao === 'ACEITO' ? 'price-aceito' : p.classificacao === 'ACIMA_DO_LIMITE' ? 'price-acima' : p.classificacao === 'ABAIXO_DO_LIMITE' ? 'price-abaixo' : 'price-invalido'}">
+                            <td>${p.fonte || ''}${p.link_fonte ? ` <sup style="color: #1e3a5f; font-weight: bold;">[${getRefIndex(p.link_fonte)}]</sup>` : ''}</td>
+                            <td>${getTipoFonteLabel(p.tipo_fonte)}</td>
                             <td>${new Date(p.data_coleta).toLocaleDateString('pt-BR')}</td>
                             <td class="currency">R$ ${Number(p.valor_unitario).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             <td>${p.percentual_variacao ? p.percentual_variacao.toFixed(2) + '%' : '–'}</td>
