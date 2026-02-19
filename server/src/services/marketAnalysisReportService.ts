@@ -180,14 +180,64 @@ export class MarketAnalysisReportService {
 
         const pdf = await page.pdf({
             format: 'A4',
-            margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' },
+            margin: { top: '48mm', bottom: '15mm', left: '15mm', right: '15mm' },
             printBackground: true,
             displayHeaderFooter: true,
-            headerTemplate: '<div></div>',
+            headerTemplate: `
+                <style>
+                    .header-table {
+                        width: 100%;
+                        margin: 0 15mm;
+                        margin-top: 8mm;
+                        border-collapse: collapse;
+                        table-layout: fixed;
+                        font-family: 'Times New Roman', Georgia, serif;
+                        line-height: 1.1;
+                    }
+                    .header-table td {
+                        border: 1px solid #ccc;
+                        vertical-align: middle;
+                        text-align: center;
+                        padding: 3pt;
+                    }
+                    .header-logo-cell { width: 30%; padding: 5pt !important; }
+                    .header-logo-cell img { width: 150px; height: auto; margin-bottom: 2pt; }
+                    .header-logo-cell .coord-nome { font-size: 6.5pt; display: block; margin-top: 0; font-weight: normal; color: #333; }
+                    .header-title-main { font-size: 11pt; font-weight: bold; text-transform: uppercase; padding: 6pt !important; }
+                    .header-subtitle { font-size: 9pt; font-weight: bold; background: #fcfcfc; padding: 2pt !important; }
+                    .header-meta-grid { padding: 0 !important; }
+                    .header-meta-table { width: 100%; border-collapse: collapse; border: none; }
+                    .header-meta-table td { border: none; border-right: 1px solid #ccc; font-size: 8pt; padding: 2pt !important; }
+                    .header-meta-table td:last-child { border-right: none; }
+                    .header-meta-table .label { font-weight: bold; }
+                </style>
+                <table class="header-table">
+                    <tr>
+                        <td rowspan="3" class="header-logo-cell">
+                            ${logoBase64 ? `<img src="${logoBase64}" alt="Brasão"/>` : ''}
+                            <span class="coord-nome">Coordenadoria de Contratos e Aquisições de TIC</span>
+                        </td>
+                        <td class="header-title-main">Análise de Mercado</td>
+                    </tr>
+                    <tr>
+                        <td class="header-subtitle">Processo de Planejamento de Aquisições e de Contratações de Soluções de TIC</td>
+                    </tr>
+                    <tr>
+                        <td class="header-meta-grid">
+                            <table class="header-meta-table">
+                                <tr>
+                                    <td><span class="label">Revisão:</span> 008</td>
+                                    <td><span class="label">Código/Versão:</span> CCA-006</td>
+                                    <td style="width: 25%;"><span class="label">Página:</span> <span class="pageNumber"></span>/<span class="totalPages"></span></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            `,
             footerTemplate: `
                 <div style="width: 100%; font-size: 9px; text-align: center; color: #666; padding: 5px;">
                     <span>Análise de Mercado - ${demanda.codigo_demanda}</span>
-                    <span style="margin-left: 20px;">Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
                 </div>
             `
         });
@@ -241,7 +291,7 @@ export class MarketAnalysisReportService {
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Relatório de Análise de Mercado (v3)</title>
+    <title>Relatório de Análise de Mercado (v1)</title>
     <style>
         /* ========== RESET & BASE ========== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -254,35 +304,91 @@ export class MarketAnalysisReportService {
             background: #fff;
         }
         
-        /* ========== CABEÇALHO DA PRIMEIRA PÁGINA (SUBSTITUI CAPA) ========== */
-        .header-section {
-            text-align: center;
-            margin-bottom: 15pt;
-            padding-bottom: 8pt;
+        /* ========== CABEÇALHO TABULAR (ESTILO OFICIAL) ========== */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20pt;
+            table-layout: fixed;
+            font-family: 'Times New Roman', Georgia, serif;
         }
         
-        .header-section h1 {
-            font-size: 11pt;
+        .header-table td {
+            border: 1px solid #ccc;
+            vertical-align: middle;
+            text-align: center;
+            padding: 3pt;
+        }
+        
+        /* Lateral Esquerda - Logo e Institucional */
+        .header-logo-cell {
+            width: 30%;
+            padding: 5pt !important;
+        }
+        
+        .header-logo-cell img {
+            width: 45px;
+            height: auto;
+            margin-bottom: 5pt;
+        }
+        
+        .header-logo-cell .poder-judiciario {
+            font-size: 10pt;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
+            margin-bottom: 2pt;
+            display: block;
         }
         
-        .header-section .subtitle {
+        .header-logo-cell .tribunal-nome {
             font-size: 8pt;
-            font-weight: normal;
-            color: #444;
-            margin-bottom: 1px;
+            display: block;
+            margin-bottom: 4pt;
         }
         
-        .report-title {
-            font-size: 14pt;
+        .header-logo-cell .coord-nome {
+            font-size: 7.5pt;
+            padding-top: 3pt;
+            display: block;
+        }
+        
+        /* Área da Direita */
+        .header-title-main {
+            font-size: 13pt;
             font-weight: bold;
-            color: #1e3a5f;
-            margin-top: 15pt;
-            text-align: center;
             text-transform: uppercase;
+            padding: 5pt !important;
+        }
+        
+        .header-subtitle {
+            font-size: 9.5pt;
+            font-weight: bold;
+            background: #fcfcfc;
+        }
+        
+        .header-meta-grid {
+            padding: 0 !important;
+        }
+        
+        .header-meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+        }
+        
+        .header-meta-table td {
+            border: none;
+            border-right: 1px solid #ccc;
+            font-size: 8.5pt;
+            padding: 2pt !important;
+        }
+        
+        .header-meta-table td:last-child {
+            border-right: none;
+        }
+        
+        .header-meta-table .label {
+            font-weight: bold;
         }
 
         /* ========== CONTEÚDO ========== */
@@ -523,17 +629,6 @@ export class MarketAnalysisReportService {
 </head>
 <body>
     
-    <!-- HEADER DA PÁGINA 1 -->
-    <div class="header-section">
-        ${logoHtml}
-        <h1>Tribunal de Justiça do Estado de Goiás</h1>
-        <p class="subtitle">Secretaria de Governança Judiciária e Tecnológica</p>
-        <p class="subtitle">Diretoria de Infraestrutura em Tecnologia da Informação</p>
-        <p class="subtitle">Coordenação de Contratos e Aquisições em TIC</p>
-        
-        <h1 class="report-title">Análise de Mercado</h1>
-    </div>
-    
     <!-- CONTEÚDO -->
     <div class="content">
         <!-- 1. IDENTIFICAÇÃO -->
@@ -543,8 +638,8 @@ export class MarketAnalysisReportService {
                 <tr>
                     <td class="label">Código</td>
                     <td class="value">${demanda.codigo_demanda}</td>
-                    <td class="label">PCA</td>
-                    <td class="value">${demanda.pca.ano} - v${demanda.pca.versao}</td>
+                    <td class="label">PCA TIC</td>
+                    <td class="value">${demanda.pca.ano}</td>
                 </tr>
                 <tr>
                     <td class="label">Tipo Contratação</td>
@@ -572,14 +667,31 @@ export class MarketAnalysisReportService {
             </table>
         </div>
         
-        <!-- 2. METODOLOGIA -->
         <div class="section">
             <h3 class="section-title">2. Metodologia</h3>
             <div class="methodology">
-                <p><strong>Base Legal:</strong> Relatório elaborado conforme Lei Federal nº 14.133/2021 e Decreto Estadual nº 9.900/2021.</p>
-                <p><strong>Critério de Aceitação:</strong> Preços válidos dentro do intervalo de ±25% em relação à mediana de todos os valores disponíveis.</p>
-                <p><strong>Valor de Referência:</strong> Média aritmética dos preços válidos (aceitos).</p>
-                <p><strong>Fontes:</strong> Painel de Preços (ComprasNet/PNCP), Atas de RP, NFs similares e Cotações de fornecedores.</p>
+                <p style="margin-bottom: 4pt;"><strong>2.1. Base Legal e Normativa:</strong></p>
+                <ul style="margin-left: 10pt; margin-bottom: 10pt; list-style-type: none; font-size: 10pt; text-align: justify;">
+                    <li style="margin-bottom: 3pt;">• <strong>Lei Federal nº 14.133/2021 (Art. 23):</strong> Assegura a compatibilidade do valor estimado com os preços de mercado.</li>
+                    <li style="margin-bottom: 3pt;">• <strong>Decreto Estadual nº 9.900/2021:</strong> Regulamenta os procedimentos de pesquisa de preços no âmbito estadual.</li>
+                    <li style="margin-bottom: 3pt;">• <strong>Manual de Pesquisa de Mercado:</strong> Diretrizes da Divisão de Compras e Controle de Contratos deste Tribunal.</li>
+                </ul>
+
+                <p style="margin-bottom: 4pt;"><strong>2.2. Critérios de Análise:</strong></p>
+                <ul style="margin-left: 10pt; margin-bottom: 10pt; list-style-type: none; font-size: 10pt; text-align: justify;">
+                    <li style="margin-bottom: 3pt;">• <strong>Critério de Aceitação:</strong> Preços válidos dentro do intervalo de ±25% em relação à mediana dos valores obtidos.</li>
+                    <li style="margin-bottom: 3pt;">• <strong>Valor de Referência:</strong> Média aritmética simples dos preços aceitos.</li>
+                </ul>
+
+                <p style="margin-bottom: 4pt;"><strong>2.3. Fontes de Informação:</strong></p>
+                <ul style="margin-left: 10pt; list-style-type: none; font-size: 9.5pt; text-align: justify;">
+                    <li style="margin-bottom: 3pt;">• Portal Nacional de Contratações Públicas (https://www.gov.br/pncp/pt-br);</li>
+                    <li style="margin-bottom: 3pt;">• Painel de Preços do Governo Federal (https://paineldeprecos.planejamento.gov.br);</li>
+                    <li style="margin-bottom: 3pt;">• Portal da Transparência (https://portaldatransparencia.gov.br/contratos);</li>
+                    <li style="margin-bottom: 3pt;">• Contratações similares do próprio TJGO e outros órgãos do Poder Judiciário por meio do Portal Connect-Jus (https://connect.cnj.jus.br);</li>
+                    <li style="margin-bottom: 3pt;">• Pesquisa em sites de busca e, em seguida, nos Portais de Transparência dos órgãos da Administração Pública, com base nos resultados retornados;</li>
+                    <li style="margin-bottom: 3pt;">• Solicitação de orçamentos para lista de fornecedores.</li>
+                </ul>
             </div>
         </div>
         
@@ -602,20 +714,18 @@ export class MarketAnalysisReportService {
                     ${itensComEstatisticas.map((item, idx) => `
                     <tr>
                         <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
-                        <td>${item.descricao}</td>
+                        <td style="text-align: justify;">${item.descricao}</td>
                         <td style="text-align: center;">${item.unidade_medida}</td>
                         <td style="text-align: center;">${Number(item.quantidade).toLocaleString('pt-BR')}</td>
                         <td class="currency" style="text-align: right;">R$ ${Number(item.valor_estimado_unitario || item.estatisticas.media || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td class="currency" style="text-align: right; font-weight: bold; color: #1e3a5f;">R$ ${Number(item.valor_estimado_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                     `).join('')}
-                </tbody>
-                <tfoot>
                     <tr style="background: #1e3a5f; color: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact;">
                         <td colspan="5" style="text-align: right; font-weight: bold; padding: 6pt 8pt; border: none;">VALOR TOTAL ESTIMADO:</td>
                         <td class="currency" style="text-align: right; font-weight: bold; font-size: 11pt; padding: 6pt 8pt; border: none; white-space: nowrap;">R$ ${valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
-                </tfoot>
+                </tbody>
             </table>
             
             <p style="font-size: 9pt; color: #666; text-align: center; margin-top: 10pt;">
@@ -714,19 +824,6 @@ export class MarketAnalysisReportService {
             Goiânia, ${dateFull}.
         </div>
 
-        <!-- ASSINATURA -->
-        <div class="signature-section">
-            <div class="signature-block">
-                <p class="name">${demanda.responsavel?.nome_completo || 'Responsável'}</p>
-                <p class="role">Coordenação de Contratos e Aquisições em TIC</p>
-                <p class="role">Matricula: ${demanda.responsavel?.matricula || 'N/I'}</p>
-            </div>
-            <div class="signature-block">
-                <p class="name">Sampahio Almeida M. Damaceno</p>
-                <p class="role">Coordenador de Contratos e Aquisições em TIC</p>
-                <p class="role">Matricula: 5155940</p>
-            </div>
-        </div>
     </div>
 </body>
 </html>
