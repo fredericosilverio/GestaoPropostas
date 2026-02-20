@@ -728,9 +728,6 @@ export class MarketAnalysisReportService {
                 </tbody>
             </table>
             
-            <p style="font-size: 9pt; color: #666; text-align: center; margin-top: 10pt;">
-                ${itensComEstatisticas.length} item(s) analisado(s) | ${itensComEstatisticas.reduce((a, i) => a + i.precos.length, 0)} preço(s) coletado(s)
-            </p>
         </div>
 
         <!-- 4. ANÁLISE DE PREÇOS (MOVED DOWN) -->
