@@ -22,6 +22,8 @@ import { FornecedorList } from './pages/fornecedores/FornecedorList';
 import { FornecedorForm } from './pages/fornecedores/FornecedorForm';
 import { AuditPage } from './pages/admin/AuditPage';
 import { Dashboard } from './pages/dashboard/Dashboard';
+import { NaturezaDespesaList } from './pages/naturezas/NaturezaDespesaList';
+import { NaturezaDespesaForm } from './pages/naturezas/NaturezaDespesaForm';
 import { LoadingOverlay } from './components/LoadingSpinner';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -107,6 +109,11 @@ export default function App() {
 
               {/* Admin */}
               <Route path="/audit" element={<PrivateLayout><AuditPage /></PrivateLayout>} />
+
+              {/* Naturezas de Despesa */}
+              <Route path="/naturezas-despesa" element={<PrivateLayout><NaturezaDespesaList /></PrivateLayout>} />
+              <Route path="/naturezas-despesa/novo" element={<PrivateLayout><NaturezaDespesaForm /></PrivateLayout>} />
+              <Route path="/naturezas-despesa/:id/editar" element={<PrivateLayout><NaturezaDespesaForm /></PrivateLayout>} />
 
               {/* Catch all */}
               <Route path="*" element={<Navigate to="/" replace />} />

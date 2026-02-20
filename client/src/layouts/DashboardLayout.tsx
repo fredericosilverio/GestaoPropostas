@@ -36,6 +36,7 @@ import {
   AccountCircle,
   Logout,
   Settings,
+  AccountBalance as NaturezaIcon,
 } from '@mui/icons-material';
 import { styled, alpha } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
@@ -54,6 +55,7 @@ const navItems = [
   { path: '/fornecedores', label: 'Fornecedores', icon: <BusinessIcon /> },
   { path: '/audit', label: 'Auditoria', icon: <PolicyIcon /> },
   { path: '/usuarios', label: 'Usuários', icon: <PeopleIcon /> },
+  { path: '/naturezas-despesa', label: 'Naturezas Despesa', icon: <NaturezaIcon /> },
 ];
 
 const Search = styled('div')(({ theme }) => ({
@@ -154,11 +156,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <ListItemIcon sx={{ color: location.pathname.startsWith(item.path) ? 'primary.main' : 'inherit' }}>
                 {item.icon}
               </ListItemIcon>
-              <ListItemText 
-                primary={item.label} 
-                primaryTypographyProps={{ 
-                  fontWeight: location.pathname.startsWith(item.path) ? 'medium' : 'regular' 
-                }} 
+              <ListItemText
+                primary={item.label}
+                primaryTypographyProps={{
+                  fontWeight: location.pathname.startsWith(item.path) ? 'medium' : 'regular'
+                }}
               />
             </ListItemButton>
           </ListItem>
@@ -189,7 +191,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           >
             <MenuIcon />
           </IconButton>
-          
+
           <Search>
             <SearchIconWrapper>
               <SearchIcon />
@@ -204,7 +206,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ThemeToggle />
-            
+
             <Tooltip title="Notificações">
               <IconButton size="large" color="inherit">
                 <Badge badgeContent={4} color="error">
@@ -223,11 +225,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 color="inherit"
               >
                 <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                    {user?.nome_completo?.charAt(0) || <AccountCircle />}
+                  {user?.nome_completo?.charAt(0) || <AccountCircle />}
                 </Avatar>
               </IconButton>
             </Tooltip>
-            
+
             <Menu
               id="menu-appbar"
               anchorEl={anchorEl}

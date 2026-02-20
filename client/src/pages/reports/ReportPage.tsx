@@ -12,14 +12,16 @@ import {
     TableHead,
     TableRow,
     Grid,
-    Stack
+    Stack,
+    CircularProgress
 } from '@mui/material';
 import {
     ArrowBack as ArrowBackIcon,
     Print as PrintIcon,
     PictureAsPdf as PdfIcon,
     TableView as ExcelIcon,
-    Warning as WarningIcon
+    Warning as WarningIcon,
+    AccountBalance as BudgetIcon
 } from '@mui/icons-material';
 import { api } from '../../services/api';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
@@ -34,6 +36,7 @@ export function ReportPage() {
     const [error, setError] = useState<string | null>(null);
     const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
     const [isPdfLoading, setIsPdfLoading] = useState(false);
+    const [isBudgetLoading, setIsBudgetLoading] = useState(false);
     const printRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -101,6 +104,37 @@ export function ReportPage() {
         }
     };
 
+    const handleExportBudgetDistribution = async () => {
+        try {
+            setIsBudgetLoading(true);
+            const response = await api.get(`/reports/budget-distribution/${id}/pdf`, {
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+            const link = document.createElement('a');
+            link.href = url;
+            const now = new Date();
+            const timestamp = now.getFullYear().toString() +
+                (now.getMonth() + 1).toString().padStart(2, '0') +
+                now.getDate().toString().padStart(2, '0') + "_" +
+                now.getHours().toString().padStart(2, '0') +
+                now.getMinutes().toString().padStart(2, '0') +
+                now.getSeconds().toString().padStart(2, '0');
+
+            link.setAttribute('download', `distribuicao_orcamentaria_${report?.demanda?.codigo || id}_${timestamp}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Erro ao baixar Distribuição Orçamentária', error);
+            alert('Erro ao gerar PDF de Distribuição Orçamentária.');
+        } finally {
+            setIsBudgetLoading(false);
+        }
+    };
+
     if (loading) {
         return <LoadingOverlay message="Carregando relatório..." />;
     }
@@ -139,6 +173,15 @@ export function ReportPage() {
                     </Button>
                     <Button variant="outlined" color="success" startIcon={<ExcelIcon />} onClick={handleExportExcel}>
                         Excel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="warning"
+                        startIcon={isBudgetLoading ? <CircularProgress size={20} color="inherit" /> : <BudgetIcon />}
+                        onClick={handleExportBudgetDistribution}
+                        disabled={isBudgetLoading}
+                    >
+                        {isBudgetLoading ? 'Gerando...' : 'Dist. Orçamentária'}
                     </Button>
                 </Stack>
             </Box>

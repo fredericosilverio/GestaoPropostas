@@ -180,6 +180,15 @@ model Item {
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
 
+  // Distribuição Orçamentária
+  natureza_despesa_id      Int?
+  natureza_despesa         NaturezaDespesa? @relation(fields: [natureza_despesa_id], references: [id])
+  percentual_1grau         Decimal?
+  percentual_2grau         Decimal?
+  percentual_area_meio     Decimal?
+  tipo_despesa             String?
+  forma_pagamento          String?
+
   // Relations
   precos Preco[]
 
@@ -309,6 +318,21 @@ model Configuracao {
   updated_at  DateTime @updatedAt
 
   @@map("configuracao")
+}
+
+// Natureza de Despesa (CRUD para Distribuição Orçamentária)
+model NaturezaDespesa {
+  id          Int      @id @default(autoincrement())
+  codigo      String   @unique
+  descricao   String
+  tipo        String   // "INVESTIMENTO" ou "CUSTEIO"
+  ativo       Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  itens       Item[]
+
+  @@map("natureza_despesa")
 }
 
 // Catálogo de Itens Reutilizáveis

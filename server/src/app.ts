@@ -12,6 +12,7 @@ import { itemRoutes, precoRoutes } from './routes/marketRoutes';
 import { reportRoutes } from './routes/reportRoutes';
 import { dashboardRoutes } from './routes/dashboardRoutes';
 import { auditRoutes } from './routes/auditRoutes';
+import { naturezaDespesaRoutes } from './routes/naturezaDespesaRoutes';
 
 // Import com tratamento de erro
 let uploadRoutes: any;
@@ -67,6 +68,7 @@ app.use('/comentarios', comentarioRoutes);
 
 import { fornecedorRoutes } from './routes/fornecedorRoutes';
 app.use('/fornecedores', fornecedorRoutes);
+app.use('/naturezas-despesa', naturezaDespesaRoutes);
 
 // Serve static files
 import path from 'path';
@@ -95,4 +97,5 @@ app.listen(port, () => {
     console.log('Registered routes:');
     console.log('  - /auth, /users, /pcas, /demandas, /itens, /precos');
     console.log('  - /reports, /dashboard, /audit, /uploads, /catalogo, /comentarios');
+    console.log('  - /fornecedores, /naturezas-despesa');
 });
