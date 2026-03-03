@@ -276,11 +276,11 @@ export class MarketAnalysisReportService {
 
         const getTipoFonteLabel = (tipo: string) => {
             const mapping: Record<string, string> = {
-                'COTACAO_FORNECEDOR': 'Cotação de Fornecedor',
-                'PAINEL_PRECOS': 'Painel de Preços',
-                'BANCO_PRECOS': 'Banco de Preços',
-                'CONTRATACAO_SIMILAR': 'Contratação Similar',
-                'NOTA_FISCAL': 'Nota Fiscal',
+                'COTACAO_FORNECEDOR': 'Cotação de Fornecedor (Art. 6º, VI)',
+                'PAINEL_PRECOS': 'Painel de Preços (Art. 6º, III)',
+                'BANCO_PRECOS': 'Banco de Preços (Art. 6º, IV)',
+                'CONTRATACAO_SIMILAR': 'Contratação Similar (Art. 6º, V)',
+                'NOTA_FISCAL': 'Nota Fiscal (Art. 6º, I)',
                 'OUTROS': 'Outros'
             };
             return mapping[tipo] || (tipo ? capitalize(tipo.replace(/_/g, ' ')) : 'N/I');
@@ -747,11 +747,11 @@ export class MarketAnalysisReportService {
                     <thead>
                         <tr>
                             <th style="width:28%">Fornecedor</th>
-                            <th style="width:18%">Origem do Preço</th>
-                            <th style="width:12%">Data da Cotação</th>
+                            <th style="width:22%">Origem do Preço</th>
+                            <th style="width:11%">Data da Cotação</th>
                             <th style="width:15%">Valor Unitário</th>
-                            <th style="width:10%">Variação</th>
-                            <th style="width:17%">Classificação do Preço</th>
+                            <th style="width:8%">Variação</th>
+                            <th style="width:16%">Classificação do Preço</th>
                         </tr>
                     </thead>
                     <tbody>

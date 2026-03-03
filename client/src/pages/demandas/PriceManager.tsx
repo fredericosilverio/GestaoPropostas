@@ -48,11 +48,11 @@ import { validateCNPJ, formatCNPJ } from '../../utils/validators';
 import type { Preco, Anexo, Fornecedor, TipoFonte, Item } from '../../types/api';
 
 const TIPO_FONTE_OPTIONS: { value: TipoFonte; label: string }[] = [
-    { value: 'COTACAO_FORNECEDOR', label: 'Cotação de Fornecedor' },
-    { value: 'PAINEL_PRECOS', label: 'Painel de Preços' },
-    { value: 'BANCO_PRECOS', label: 'Banco de Preços' },
-    { value: 'CONTRATACAO_SIMILAR', label: 'Contratação Similar' },
-    { value: 'NOTA_FISCAL', label: 'Nota Fiscal' },
+    { value: 'COTACAO_FORNECEDOR', label: 'Cotação de Fornecedor (Art. 6º, VI)' },
+    { value: 'PAINEL_PRECOS', label: 'Painel de Preços (Art. 6º, III)' },
+    { value: 'BANCO_PRECOS', label: 'Banco de Preços (Art. 6º, IV)' },
+    { value: 'CONTRATACAO_SIMILAR', label: 'Contratação Similar (Art. 6º, V)' },
+    { value: 'NOTA_FISCAL', label: 'Nota Fiscal (Art. 6º, I)' },
     { value: 'OUTROS', label: 'Outros' },
 ];
 
@@ -116,7 +116,7 @@ export function PriceManager() {
 
     async function loadData() {
         setLoading(true);
-        
+
         // Carregar preços (Prioridade)
         try {
             const pricesRes = await api.get(`/precos?item_id=${itemId}`);
@@ -349,7 +349,7 @@ export function PriceManager() {
                                             </Typography>
                                         </TableCell>
                                         <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                                            <Chip 
+                                            <Chip
                                                 label={TIPO_FONTE_OPTIONS.find(o => o.value === p.tipo_fonte)?.label || p.tipo_fonte}
                                                 size="small"
                                                 variant="outlined"
@@ -434,7 +434,7 @@ export function PriceManager() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        
+
                         <Grid size={{ xs: 12, md: 6 }}>
                             <FornecedorSelect
                                 value={fornecedorId}
@@ -506,7 +506,7 @@ export function PriceManager() {
                                     PDF, JPG, PNG - Max 10MB cada, até 5 arquivos
                                 </Typography>
                             </Typography>
-                            
+
                             <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
                                 <input
                                     type="file"

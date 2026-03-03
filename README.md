@@ -81,8 +81,15 @@ O sistema está preparado para rodar em containers, o que facilita o deploy e ga
    docker-compose up --build -d
    ```
 3. O sistema estará disponível em:
-   - **Frontend:** [http://localhost](http://localhost) (Porta 80)
-   - **Backend API:** [http://localhost:3333](http://localhost:3333)
+    - **Frontend:** [http://localhost](http://localhost) (Porta 80)
+    - **Backend API:** [http://localhost:3333](http://localhost:3333)
+
+> [!IMPORTANT]
+> Sempre que realizar alterações no código ou nas configurações (como as recentes atualizações de conformidade com o Art. 6º), é necessário reconstruir as imagens para que as mudanças tenham efeito no ambiente Docker:
+> ```bash
+> docker-compose down
+> docker-compose up --build -d
+> ```
 
 **Notas importantes:**
 - O banco de dados SQLite e os arquivos de upload são persistidos através de volumes do Docker.

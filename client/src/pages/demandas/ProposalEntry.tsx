@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-    Box, 
-    Button, 
-    Container, 
-    Grid, 
-    Paper, 
-    TextField, 
-    Typography, 
-    Select, 
-    MenuItem, 
-    FormControl, 
-    InputLabel, 
+import {
+    Box,
+    Button,
+    Container,
+    Grid,
+    Paper,
+    TextField,
+    Typography,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
     Stack,
     Table,
     TableBody,
@@ -22,9 +22,9 @@ import {
     Chip,
     CircularProgress
 } from '@mui/material';
-import { 
-    ArrowBack as ArrowBackIcon, 
-    Save as SaveIcon, 
+import {
+    ArrowBack as ArrowBackIcon,
+    Save as SaveIcon,
     AttachFile as AttachFileIcon,
     Description as DescriptionIcon
 } from '@mui/icons-material';
@@ -35,11 +35,11 @@ import { FornecedorSelect } from '../../components/FornecedorSelect';
 import type { Item, TipoFonte } from '../../types/api';
 
 const TIPO_FONTE_OPTIONS: { value: TipoFonte; label: string }[] = [
-    { value: 'COTACAO_FORNECEDOR', label: 'Cotação de Fornecedor' },
-    { value: 'PAINEL_PRECOS', label: 'Painel de Preços' },
-    { value: 'BANCO_PRECOS', label: 'Banco de Preços' },
-    { value: 'CONTRATACAO_SIMILAR', label: 'Contratação Similar' },
-    { value: 'NOTA_FISCAL', label: 'Nota Fiscal' },
+    { value: 'COTACAO_FORNECEDOR', label: 'Cotação de Fornecedor (Art. 6º, VI)' },
+    { value: 'PAINEL_PRECOS', label: 'Painel de Preços (Art. 6º, III)' },
+    { value: 'BANCO_PRECOS', label: 'Banco de Preços (Art. 6º, IV)' },
+    { value: 'CONTRATACAO_SIMILAR', label: 'Contratação Similar (Art. 6º, V)' },
+    { value: 'NOTA_FISCAL', label: 'Nota Fiscal (Art. 6º, I)' },
     { value: 'OUTROS', label: 'Outros' },
 ];
 
@@ -278,7 +278,7 @@ export function ProposalEntry() {
                                 PDF, JPG, PNG - Max 10MB cada, até 5 arquivos
                             </Typography>
                         </Typography>
-                        
+
                         <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
                             <input
                                 type="file"
