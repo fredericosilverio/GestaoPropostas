@@ -30,16 +30,48 @@ export class ReportService {
             throw new Error('Demanda não encontrada');
         }
 
-        // Calculate/Format data for report
+        // Calculate/Format data for report using ±25% median fallback (same as PDF)
         const itensReport = demanda.itens.map(item => {
-            const stats = marketAnalysisService.calculateStatistics(item.precos);
+            // Step 1: Calculate base statistics from ALL prices (for median reference)
+            const baseStats = marketAnalysisService.calculateStatistics(item.precos);
+
+            // Step 2: Classify prices using the base median
+            const classifiedPrices = marketAnalysisService.classifyPrices(item.precos, baseStats.mediana);
+
+            // Step 3: Filter to accepted prices only (±25% of median)
+            let precosParaCalculo = classifiedPrices;
+            const precosAceitos = classifiedPrices.filter((p: any) => p.classificacao === 'ACEITO');
+
+            let usouFallback = false;
+            if (precosAceitos.length > 0) {
+                precosParaCalculo = precosAceitos;
+            } else {
+                // Fallback: use all prices when no accepted prices exist
+                precosParaCalculo = classifiedPrices;
+                usouFallback = true;
+            }
+
+            // Step 4: Recalculate statistics from filtered prices
+            const filteredStats = marketAnalysisService.calculateStatistics(precosParaCalculo);
+
+            // Step 5: Use filtered mean as estimated unit value
+            const valorUnitario = filteredStats.media ? Number(filteredStats.media.toFixed(2)) : 0;
+            const valorTotal = Number((valorUnitario * Number(item.quantidade)).toFixed(2));
 
             return {
                 ...item,
-                precos: item.precos, // Already sorted
-                estatisticas: stats,
-                // Ensure latest classification is used or re-calculate if needed
-                valor_estimado_final: item.valor_estimado_total,
+                precos: classifiedPrices, // Include classification info for display
+                estatisticas: {
+                    ...filteredStats,
+                    // Also include base median for reference
+                    medianaBase: baseStats.mediana,
+                    limiteInferior: baseStats.mediana * 0.75,
+                    limiteSuperior: baseStats.mediana * 1.25,
+                    usouFallback
+                },
+                valor_estimado_unitario: valorUnitario,
+                valor_estimado_final: valorTotal,
+                valor_estimado_total: valorTotal,
                 descricao_detalhada: `${item.descricao}${item.especificacoes_tecnicas ? ' - ' + item.especificacoes_tecnicas : ''}`
             };
         });
