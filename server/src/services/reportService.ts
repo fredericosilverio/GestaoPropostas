@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { MarketAnalysisService } from './marketAnalysisService';
+import moment from 'moment';
 
 const prisma = new PrismaClient();
 const marketAnalysisService = new MarketAnalysisService();
@@ -80,7 +81,7 @@ export class ReportService {
 
         return {
             titulo: 'Relatório de Análise de Mercado',
-            data_emissao: new Date(),
+            data_emissao: moment().utcOffset(-3).toDate(),
             demanda: {
                 id: demanda.id,
                 codigo: demanda.codigo_demanda,

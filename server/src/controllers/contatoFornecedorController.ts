@@ -3,6 +3,10 @@ import { ContatoFornecedorService } from '../services/contatoFornecedorService';
 import exceljs from 'exceljs';
 import puppeteer from 'puppeteer';
 import moment from 'moment';
+import 'moment/locale/pt-br';
+
+moment.locale('pt-br');
+
 import path from 'path';
 import fs from 'fs';
 
@@ -146,8 +150,8 @@ export class ContatoFornecedorController {
                         id: c.id,
                         fornecedor: c.fornecedor.nome_fantasia || c.fornecedor.razao_social,
                         representante: c.representante ? c.representante.nome : 'N/A',
-                        data_coleta: moment(c.data_hora).format('DD/MM/YYYY'),
-                        horario: moment(c.data_hora).format('HH:mm'),
+                        data_coleta: moment(c.data_hora).utcOffset(-3).format('DD/MM/YYYY'),
+                        horario: moment(c.data_hora).utcOffset(-3).format('HH:mm'),
                         tipo: `${c.tipo_contato} (${c.local_meio})`,
                         servidores: c.servidores_envolvidos.map((se: any) => se.usuario.nome_completo).join('; '),
                         fonte_pesquisa: c.fonte_pesquisa || '',
@@ -214,8 +218,8 @@ export class ContatoFornecedorController {
                                 <span class="cnpj">${formatCnpj(forn.cnpj)}</span>
                             </td>` : ''}
                             <td class="fonte-col">${c.fonte_pesquisa || '\u2014'}</td>
-                            <td class="center">${moment(c.data_hora).format('DD/MM/YYYY')}</td>
-                            <td class="center">${moment(c.data_hora).format('HH:mm')}</td>
+                            <td class="center">${moment(c.data_hora).utcOffset(-3).format('DD/MM/YYYY')}</td>
+                            <td class="center">${moment(c.data_hora).utcOffset(-3).format('HH:mm')}</td>
                             <td>${c.tipo_contato}<br/><small>${c.local_meio}</small></td>
                             <td>${c.representante ? c.representante.nome : '\u2014'}</td>
                             <td class="pauta-col">${c.pauta || '\u2014'}</td>
@@ -227,7 +231,6 @@ export class ContatoFornecedorController {
                     ? `<tr><td colspan="7" style="text-align:center;padding:20pt;color:#666;">Nenhum registro encontrado para os filtros informados.</td></tr>`
                     : '';
 
-                const logoHtml = logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="width:135px;height:auto;"/>` : '';
 
                 const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -238,18 +241,13 @@ export class ContatoFornecedorController {
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'Times New Roman',Georgia,serif; font-size:9pt; color:#1a1a1a; background:#fff; }
 
-  /* ===== INSTITUTIONAL HEADER ===== */
-  .header-table { width:100%; border-collapse:collapse; margin-bottom:16pt; table-layout:fixed; }
-  .header-table td { border:1px solid #aaa; vertical-align:middle; text-align:center; padding:3pt; }
-  .header-logo-cell { width:22%; padding:5pt !important; }
-  .header-logo-cell .coord-nome { font-size:6.5pt; display:block; margin-top:3pt; color:#444; }
-  .header-title-main { font-size:12pt; font-weight:bold; text-transform:uppercase; padding:6pt !important; }
-  .header-subtitle { font-size:8.5pt; font-weight:bold; background:#fcfcfc; padding:3pt !important; }
-  .header-meta-grid { padding:0 !important; }
-  .header-meta-table { width:100%; border-collapse:collapse; border:none; }
-  .header-meta-table td { border:none; border-right:1px solid #aaa; font-size:8pt; padding:2pt 4pt !important; }
-  .header-meta-table td:last-child { border-right:none; }
-  .label { font-weight:bold; }
+  /* ===== SECTION STYLES ===== */
+  .section { margin-bottom: 16pt; }
+  .section-title { font-size: 11pt; font-weight: bold; color: #1e3a5f; margin-bottom: 8pt; border-bottom: 1.5pt solid #1e3a5f; padding-bottom: 2pt; text-transform: uppercase; }
+  
+  .info-table { width: 100%; border-collapse: collapse; margin-bottom: 8pt; }
+  .info-table td { border: 1px solid #ccc; padding: 4pt 6pt; font-size: 8.5pt; }
+  .info-table .label { background: #f5f5f5; font-weight: bold; width: 18%; color: #333; }
 
   /* ===== DATA TABLE ===== */
   .main-table { width:100%; border-collapse:collapse; font-size:8pt; }
@@ -268,32 +266,8 @@ export class ContatoFornecedorController {
 </head>
 <body>
 
-<!-- INSTITUTIONAL HEADER (same style as Análise de Mercado) -->
-<table class="header-table">
-  <tr>
-    <td rowspan="3" class="header-logo-cell">
-      ${logoHtml}
-      <span class="coord-nome">Coordenadoria de Contratos e Aquisições de TIC</span>
-    </td>
-    <td class="header-title-main">Controle de Fornecedor</td>
-  </tr>
-  <tr>
-    <td class="header-subtitle">Registro de Interações e Contatos com Fornecedores — Decreto Estadual nº 9.900/2021</td>
-  </tr>
-  <tr>
-    <td class="header-meta-grid">
-      <table class="header-meta-table">
-        <tr>
-          <td><span class="label">Emissão:</span> ${moment().format('DD/MM/YYYY HH:mm')}</td>
-          <td><span class="label">Filtros:</span> PCA: ${req.query.pcaId || 'Todos'} / Demanda: ${req.query.demandaId || 'Todas'} / Fornecedor: ${req.query.fornecedorId || 'Todos'}</td>
-          <td><span class="label">Total:</span> ${contatos.length} registro(s)</td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>
 
-<!-- MAIN DATA TABLE (spreadsheet-style, grouped by supplier) -->
+
 <table class="main-table">
   <thead>
     <tr>
@@ -324,8 +298,48 @@ export class ContatoFornecedorController {
                 const pdfBuffer = await page.pdf({
                     format: 'A4',
                     landscape: true,
-                    margin: { top: '12mm', right: '12mm', bottom: '12mm', left: '12mm' },
-                    printBackground: true
+                    margin: { top: '48mm', right: '15mm', bottom: '15mm', left: '15mm' },
+                    printBackground: true,
+                    displayHeaderFooter: true,
+                    headerTemplate: `
+                        <style>
+                            .header-table { width: 100%; margin: 0 15mm; margin-top: 8mm; border-collapse: collapse; table-layout: fixed; font-family: 'Times New Roman', Georgia, serif; line-height: 1.1; }
+                            .header-table td { border: 1px solid #ccc; vertical-align: middle; text-align: center; padding: 3pt; }
+                            .header-logo-cell { width: 22%; padding: 5pt !important; }
+                            .header-logo-cell .coord-nome { font-size: 6pt; display: block; margin-top: 3pt; color: #444; font-weight: normal; }
+                            .header-title-main { font-size: 11pt; font-weight: bold; text-transform: uppercase; }
+                            .header-subtitle { font-size: 8pt; font-weight: bold; background: #fcfcfc; }
+                            .header-meta-grid { padding: 0 !important; }
+                            .header-meta-table { width: 100%; border-collapse: collapse; border: none; }
+                            .header-meta-table td { border: none; border-right: 1px solid #ccc; font-size: 7.5pt; padding: 2pt !important; }
+                            .header-meta-table td:last-child { border-right: none; }
+                            .label { font-weight: bold; }
+                        </style>
+                        <table class="header-table">
+                            <tr>
+                                <td rowspan="3" class="header-logo-cell">
+                                    ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="width:130px;height:auto;"/>` : ''}
+                                    <span class="coord-nome">Coordenadoria de Contratos e Aquisições de TIC</span>
+                                </td>
+                                <td class="header-title-main">Controle de Fornecedor</td>
+                            </tr>
+                            <tr>
+                                <td class="header-subtitle">Registro de Interações e Contatos com Fornecedores — Decreto Estadual nº 9.900/2021</td>
+                            </tr>
+                            <tr>
+                                <td class="header-meta-grid">
+                                    <table class="header-meta-table">
+                                        <tr>
+                                            <td><span class="label">Revisão:</span> 008</td>
+                                            <td><span class="label">Código/Versão:</span> CCA-006</td>
+                                            <td style="width: 25%;"><span class="label">Página:</span> <span class="pageNumber"></span>/<span class="totalPages"></span></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    `,
+                    footerTemplate: '<div style="font-size: 8px; text-align: center; width: 100%; color: #666; padding-bottom: 5mm;">Controle de Fornecedor</div>'
                 });
                 await browser.close();
 

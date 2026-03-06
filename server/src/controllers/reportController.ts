@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import moment from 'moment';
 import { ReportService } from '../services/reportService';
 import { ExportService } from '../services/exportService';
 import { MarketAnalysisReportService } from '../services/marketAnalysisReportService';
@@ -33,13 +34,8 @@ export class ReportController {
             res.setHeader('X-Report-Version', 'v3-market-analysis');
 
             res.setHeader('Content-Type', 'application/pdf');
-            const now = new Date();
-            const timestamp = now.getFullYear().toString() +
-                (now.getMonth() + 1).toString().padStart(2, '0') +
-                now.getDate().toString().padStart(2, '0') + "_" +
-                now.getHours().toString().padStart(2, '0') +
-                now.getMinutes().toString().padStart(2, '0') +
-                now.getSeconds().toString().padStart(2, '0');
+            const now = moment().utcOffset(-3);
+            const timestamp = now.format('YYYYMMDD_HHmmss');
 
             res.setHeader('Content-Disposition', `attachment; filename=relatorio_analise_${id}_${timestamp}.pdf`);
             res.send(pdfBuffer);
@@ -73,13 +69,8 @@ export class ReportController {
             const pdfBuffer = await budgetService.generateReport(id, filterType as 'all' | 'median25' | 'median25fallback');
 
             res.setHeader('Content-Type', 'application/pdf');
-            const now = new Date();
-            const timestamp = now.getFullYear().toString() +
-                (now.getMonth() + 1).toString().padStart(2, '0') +
-                now.getDate().toString().padStart(2, '0') + "_" +
-                now.getHours().toString().padStart(2, '0') +
-                now.getMinutes().toString().padStart(2, '0') +
-                now.getSeconds().toString().padStart(2, '0');
+            const now = moment().utcOffset(-3);
+            const timestamp = now.format('YYYYMMDD_HHmmss');
 
             res.setHeader('Content-Disposition', `attachment; filename=distribuicao_orcamentaria_${id}_${timestamp}.pdf`);
             res.send(pdfBuffer);

@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { MarketAnalysisService } from './marketAnalysisService';
 import path from 'path';
 import fs from 'fs';
+import moment from 'moment';
 
 const prisma = new PrismaClient();
 const marketAnalysisService = new MarketAnalysisService();
@@ -759,7 +760,7 @@ export class MarketAnalysisReportService {
                         <tr class="${p.classificacao === 'ACEITO' ? 'price-aceito' : p.classificacao === 'ACIMA_DO_LIMITE' ? 'price-acima' : p.classificacao === 'ABAIXO_DO_LIMITE' ? 'price-abaixo' : 'price-invalido'}">
                             <td>${p.fonte || ''}${p.link_fonte ? ` <sup style="color: #1e3a5f; font-weight: bold;">[${getRefIndex(p.link_fonte)}]</sup>` : ''}</td>
                             <td>${getTipoFonteLabel(p.tipo_fonte)}</td>
-                            <td>${new Date(p.data_coleta).toLocaleDateString('pt-BR')}</td>
+                            <td>${moment(p.data_coleta).utcOffset(-3).format('DD/MM/YYYY')}</td>
                             <td class="currency">R$ ${Number(p.valor_unitario).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             <td>${p.percentual_variacao ? p.percentual_variacao.toFixed(2) + '%' : '–'}</td>
                             <td>${p.classificacao === 'ACEITO' ? 'Válido' : p.classificacao === 'ABAIXO_DO_LIMITE' ? 'Abaixo do Limite Inferior' : p.classificacao === 'ACIMA_DO_LIMITE' ? 'Acima do Limite Superior' : p.classificacao}</td>
