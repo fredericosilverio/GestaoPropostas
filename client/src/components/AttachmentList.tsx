@@ -29,7 +29,7 @@ interface Anexo {
 }
 
 interface Props {
-    entityType: 'DEMANDA' | 'ITEM' | 'PRECO';
+    entityType: 'DEMANDA' | 'ITEM' | 'PRECO' | 'CONTATO_FORNECEDOR';
     entityId: number;
     refreshTrigger: number;
     consolidate?: boolean; // If true and entityType is DEMANDA, fetch all related attachments
@@ -89,11 +89,11 @@ export function AttachmentList({ entityType, entityId, refreshTrigger, consolida
                     variant="outlined"
                     sx={{ mb: 1, borderRadius: 1, p: 1 }}
                     secondaryAction={
-                        <IconButton 
-                            edge="end" 
-                            aria-label="delete" 
-                            onClick={() => handleDelete(anexo.id)} 
-                            color="error" 
+                        <IconButton
+                            edge="end"
+                            aria-label="delete"
+                            onClick={() => handleDelete(anexo.id)}
+                            color="error"
                             size="small"
                         >
                             <DeleteIcon />

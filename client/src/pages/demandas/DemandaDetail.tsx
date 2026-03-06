@@ -29,7 +29,8 @@ import {
     AttachMoney as AttachMoneyIcon,
     NoteAdd as NoteAddIcon,
     CheckCircle as CheckCircleIcon,
-    Delete as DeleteIcon
+    Delete as DeleteIcon,
+    ContactPhone as ContactPhoneIcon
 } from '@mui/icons-material';
 import { api } from '../../services/api';
 import { InitiateContractingModal, FinalizeContractModal } from './ContractingModals';
@@ -59,6 +60,7 @@ interface DemandaDetailType {
     descricao: string;
     status: string;
     pca?: {
+        id: number;
         ano: number;
         orgao: string;
         numero_pca: string;
@@ -213,6 +215,15 @@ export function DemandaDetail() {
                             size="small"
                         >
                             Relatório
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            color="secondary"
+                            startIcon={<ContactPhoneIcon />}
+                            onClick={() => navigate(`/contatos/new?demandaId=${id}${demanda.pca ? `&pcaId=${demanda.pca.id}` : ''}`)}
+                            size="small"
+                        >
+                            Registrar Contato
                         </Button>
                         <Button
                             variant="contained"

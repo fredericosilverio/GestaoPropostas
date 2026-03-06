@@ -20,6 +20,9 @@ import { UsuarioList } from './pages/usuarios/UsuarioList';
 import { UsuarioForm } from './pages/usuarios/UsuarioForm';
 import { FornecedorList } from './pages/fornecedores/FornecedorList';
 import { FornecedorForm } from './pages/fornecedores/FornecedorForm';
+import { ContatoList } from './pages/contatos/ContatoList';
+import { ContatoForm } from './pages/contatos/ContatoForm';
+import { RelatorioContatos } from './pages/contatos/RelatorioContatos';
 import { AuditPage } from './pages/admin/AuditPage';
 import { Dashboard } from './pages/dashboard/Dashboard';
 import { NaturezaDespesaList } from './pages/naturezas/NaturezaDespesaList';
@@ -106,6 +109,12 @@ export default function App() {
               <Route path="/fornecedores" element={<PrivateLayout><FornecedorList /></PrivateLayout>} />
               <Route path="/fornecedores/new" element={<PrivateLayout><FornecedorForm /></PrivateLayout>} />
               <Route path="/fornecedores/:id" element={<PrivateLayout><FornecedorForm /></PrivateLayout>} />
+
+              {/* Contatos */}
+              <Route path="/contatos" element={<PrivateLayout><ContatoList /></PrivateLayout>} />
+              <Route path="/contatos/new" element={<PrivateLayout><ContatoForm /></PrivateLayout>} />
+              <Route path="/contatos/:id" element={<PrivateLayout><ContatoForm /></PrivateLayout>} />
+              <Route path="/relatorio-contatos" element={<PrivateLayout><RelatorioContatos /></PrivateLayout>} />
 
               {/* Admin */}
               <Route path="/audit" element={<PrivateLayout><AuditPage /></PrivateLayout>} />

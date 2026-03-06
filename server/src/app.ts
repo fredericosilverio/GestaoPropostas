@@ -67,7 +67,9 @@ app.use('/catalogo', catalogoRoutes);
 app.use('/comentarios', comentarioRoutes);
 
 import { fornecedorRoutes } from './routes/fornecedorRoutes';
+import { contatoRoutes } from './routes/contatoFornecedorRoutes';
 app.use('/fornecedores', fornecedorRoutes);
+app.use('/contatos', contatoRoutes);
 app.use('/naturezas-despesa', naturezaDespesaRoutes);
 
 // Serve static files
@@ -97,5 +99,5 @@ app.listen(port, () => {
     console.log('Registered routes:');
     console.log('  - /auth, /users, /pcas, /demandas, /itens, /precos');
     console.log('  - /reports, /dashboard, /audit, /uploads, /catalogo, /comentarios');
-    console.log('  - /fornecedores, /naturezas-despesa');
+    console.log('  - /fornecedores, /contatos, /naturezas-despesa');
 });

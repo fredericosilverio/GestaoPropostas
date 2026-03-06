@@ -3,7 +3,7 @@ import { Alert, AlertTitle, Box, Slide } from '@mui/material';
 
 interface ToastMessage {
     id: string;
-    type: 'success' | 'error' | 'info';
+    type: 'success' | 'error' | 'info' | 'warning';
     title?: string;
     description?: string;
 }
@@ -61,7 +61,7 @@ function ToastContainer({ messages, removeToast }: { messages: ToastMessage[], r
         <Box
             sx={{
                 position: 'fixed',
-                top: 80, 
+                top: 80,
                 right: 24,
                 zIndex: 2000,
                 display: 'flex',

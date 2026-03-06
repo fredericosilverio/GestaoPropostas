@@ -5,7 +5,7 @@ import { api } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 
 interface Props {
-    entityType: 'DEMANDA' | 'ITEM' | 'PRECO';
+    entityType: 'DEMANDA' | 'ITEM' | 'PRECO' | 'CONTATO_FORNECEDOR';
     entityId: number;
     onUploadSuccess: () => void;
 }

@@ -1,31 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box,
-  Button,
-  Card,
-  TextField,
-  Typography,
-  InputAdornment,
-  FormControlLabel,
-  Checkbox
+    Box,
+    Button,
+    Card,
+    TextField,
+    Typography,
+    InputAdornment,
+    FormControlLabel,
+    Checkbox
 } from '@mui/material';
 import {
-  DataGrid,
-  GridActionsCellItem,
-  GridToolbarContainer,
-  GridToolbarExport,
-  GridToolbarColumnsButton,
-  GridToolbarFilterButton,
-  GridToolbarDensitySelector
+    DataGrid,
+    GridActionsCellItem,
+    GridToolbarContainer,
+    GridToolbarExport,
+    GridToolbarColumnsButton,
+    GridToolbarFilterButton,
+    GridToolbarDensitySelector
 } from '@mui/x-data-grid';
 import type { GridColDef } from '@mui/x-data-grid';
 import {
-  Add as AddIcon,
-  Search as SearchIcon,
-  Edit as EditIcon,
-  CheckCircle as CheckCircleIcon,
-  Block as BlockIcon
+    Add as AddIcon,
+    Search as SearchIcon,
+    Edit as EditIcon,
+    CheckCircle as CheckCircleIcon,
+    Block as BlockIcon
 } from '@mui/icons-material';
 import { api } from '../../services/api';
 import type { Fornecedor } from '../../types/api';
@@ -34,14 +34,14 @@ import { LoadingOverlay } from '../../components/LoadingSpinner';
 import { EmptyState } from '../../components/EmptyState';
 
 function CustomToolbar() {
-  return (
-    <GridToolbarContainer>
-      <GridToolbarColumnsButton />
-      <GridToolbarFilterButton />
-      <GridToolbarDensitySelector />
-      <GridToolbarExport />
-    </GridToolbarContainer>
-  );
+    return (
+        <GridToolbarContainer>
+            <GridToolbarColumnsButton />
+            <GridToolbarFilterButton />
+            <GridToolbarDensitySelector />
+            <GridToolbarExport />
+        </GridToolbarContainer>
+    );
 }
 
 export function FornecedorList() {
@@ -130,9 +130,28 @@ export function FornecedorList() {
             )
         },
         {
+            field: 'situacao_cadastral',
+            headerName: 'Situação',
+            width: 130,
+            renderCell: (params) => {
+                let color = 'default';
+                if (params.value === 'ATIVO') color = 'success.main';
+                if (params.value === 'SUSPENSO') color = 'warning.main';
+                if (params.value === 'INABILITADO') color = 'error.main';
+
+                return (
+                    <Box sx={{ color, display: 'flex', alignItems: 'center' }}>
+                        <Typography variant="body2" fontWeight="bold">
+                            {params.value || 'ATIVO'}
+                        </Typography>
+                    </Box>
+                );
+            }
+        },
+        {
             field: 'ativo',
-            headerName: 'Status',
-            width: 100,
+            headerName: 'Acesso Sist.',
+            width: 110,
             renderCell: (params) => (
                 <Box
                     sx={{

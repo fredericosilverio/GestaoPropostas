@@ -22,7 +22,7 @@ export class DemandaService {
             where,
             include: {
                 pca: {
-                    select: { ano: true, numero_pca: true, orgao: true }
+                    select: { id: true, ano: true, numero_pca: true, orgao: true }
                 },
                 responsavel: {
                     select: { id: true, nome_completo: true, email: true }
@@ -64,7 +64,7 @@ export class DemandaService {
         const numPca = pca.numero_pca.padStart(3, '0');
         const numProjeto = String(numero_projeto).padStart(3, '0');
         const codigo_demanda = `PCA${pca.ano}-${numPca}-${numProjeto}`;
-        
+
         // Use provided responsavel_id or default to creator
         const responsavel_id = data.responsavel_id ? Number(data.responsavel_id) : userId;
 

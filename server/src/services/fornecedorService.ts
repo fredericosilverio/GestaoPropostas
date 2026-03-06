@@ -21,13 +21,19 @@ export class FornecedorService {
 
         return prisma.fornecedor.findMany({
             where,
+            include: {
+                representantes: true
+            },
             orderBy: { razao_social: 'asc' }
         });
     }
 
     async findById(id: number) {
         return prisma.fornecedor.findUnique({
-            where: { id }
+            where: { id },
+            include: {
+                representantes: true
+            }
         });
     }
 
@@ -89,6 +95,30 @@ export class FornecedorService {
         return prisma.fornecedor.update({
             where: { id },
             data: { ativo: !fornecedor.ativo }
+        });
+    }
+
+    // --- Representantes ---
+
+    async addRepresentante(fornecedorId: number, data: any) {
+        const fornecedor = await this.findById(fornecedorId);
+        if (!fornecedor) throw new Error('Fornecedor não encontrado');
+
+        return prisma.representanteFornecedor.create({
+            data: {
+                fornecedor_id: fornecedorId,
+                nome: data.nome,
+                cpf: data.cpf,
+                cargo: data.cargo,
+                email: data.email,
+                telefone: data.telefone
+            }
+        });
+    }
+
+    async removeRepresentante(id: number) {
+        return prisma.representanteFornecedor.delete({
+            where: { id }
         });
     }
 }

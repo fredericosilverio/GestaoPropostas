@@ -9,9 +9,23 @@ import {
     Button,
     Grid,
     CircularProgress,
-    Container
+    Container,
+    MenuItem,
+    Select,
+    FormControl,
+    InputLabel,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableRow,
+    IconButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions
 } from '@mui/material';
-import { Save as SaveIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { Save as SaveIcon, ArrowBack as ArrowBackIcon, Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { api } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
@@ -44,6 +58,16 @@ export function FornecedorForm() {
     const [emailContato, setEmailContato] = useState('');
     const [telefoneContato, setTelefoneContato] = useState('');
 
+    // Novos Campos
+    const [objetoFornecimento, setObjetoFornecimento] = useState('');
+    const [situacaoCadastral, setSituacaoCadastral] = useState('ATIVO');
+
+    // Representantes
+    const [representantes, setRepresentantes] = useState<any[]>([]);
+    const [openRepModal, setOpenRepModal] = useState(false);
+    const [newRep, setNewRep] = useState({ nome: '', cpf: '', cargo: '', email: '', telefone: '' });
+    const [savingRep, setSavingRep] = useState(false);
+
     useEffect(() => {
         if (isEditing) {
             loadFornecedor();
@@ -68,6 +92,10 @@ export function FornecedorForm() {
             setResponsavelLegal(data.responsavel_legal || '');
             setEmailContato(data.email_contato || '');
             setTelefoneContato(data.telefone_contato || '');
+
+            setObjetoFornecimento(data.objeto_fornecimento || '');
+            setSituacaoCadastral(data.situacao_cadastral || 'ATIVO');
+            setRepresentantes(data.representantes || []);
         } catch (error) {
             console.error('Erro ao carregar fornecedor', error);
             addToast({ type: 'error', title: 'Erro', description: 'Erro ao carregar dados do fornecedor' });
@@ -94,7 +122,9 @@ export function FornecedorForm() {
             cep: cep.replace(/[^\d]/g, ''),
             responsavel_legal: responsavelLegal,
             email_contato: emailContato,
-            telefone_contato: telefoneContato
+            telefone_contato: telefoneContato,
+            objeto_fornecimento: objetoFornecimento,
+            situacao_cadastral: situacaoCadastral
         };
 
         try {
@@ -111,6 +141,38 @@ export function FornecedorForm() {
             addToast({ type: 'error', title: 'Erro', description: msg });
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleAddRepresentante() {
+        if (!newRep.nome) {
+            addToast({ type: 'warning', title: 'Atenção', description: 'Nome do representante é obrigatório' });
+            return;
+        }
+
+        setSavingRep(true);
+        try {
+            await api.post(`/fornecedores/${id}/representantes`, newRep);
+            addToast({ type: 'success', title: 'Sucesso', description: 'Representante adicionado' });
+            setOpenRepModal(false);
+            setNewRep({ nome: '', cpf: '', cargo: '', email: '', telefone: '' });
+            loadFornecedor(); // reload data
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Erro', description: 'Falha ao adicionar representante' });
+        } finally {
+            setSavingRep(false);
+        }
+    }
+
+    async function handleRemoveRepresentante(repId: number) {
+        if (!window.confirm('Deseja realmente remover este representante?')) return;
+
+        try {
+            await api.delete(`/fornecedores/${id}/representantes/${repId}`);
+            addToast({ type: 'success', title: 'Sucesso', description: 'Representante removido' });
+            loadFornecedor();
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Erro', description: 'Falha ao remover representante' });
         }
     }
 
@@ -146,7 +208,7 @@ export function FornecedorForm() {
                 </Button>
             </Box>
 
-            <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
+            <Paper sx={{ p: 4 }} component="form" onSubmit={handleSubmit}>
                 <Grid container spacing={3}>
                     {/* Dados Principais */}
                     <Grid size={12}>
@@ -154,7 +216,7 @@ export function FornecedorForm() {
                             Dados Principais
                         </Typography>
                     </Grid>
-                    
+
                     <Grid size={{ xs: 12, md: 6 }}>
                         <TextField
                             label="Razão Social"
@@ -186,13 +248,38 @@ export function FornecedorForm() {
                         />
                     </Grid>
 
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <TextField
+                            label="Objeto de Fornecimento"
+                            value={objetoFornecimento}
+                            onChange={e => setObjetoFornecimento(e.target.value)}
+                            fullWidth
+                            variant="outlined"
+                        />
+                    </Grid>
+
+                    <Grid size={{ xs: 12, md: 6 }}>
+                        <FormControl fullWidth variant="outlined">
+                            <InputLabel>Situação Cadastral</InputLabel>
+                            <Select
+                                value={situacaoCadastral}
+                                onChange={e => setSituacaoCadastral(e.target.value)}
+                                label="Situação Cadastral"
+                            >
+                                <MenuItem value="ATIVO">Ativo</MenuItem>
+                                <MenuItem value="SUSPENSO">Suspenso</MenuItem>
+                                <MenuItem value="INABILITADO">Inabilitado</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+
                     {/* Endereço */}
                     <Grid size={12} sx={{ mt: 2 }}>
                         <Typography variant="h6" gutterBottom sx={{ borderBottom: 1, borderColor: 'divider', pb: 1 }}>
                             Endereço
                         </Typography>
                     </Grid>
-                    
+
                     <Grid size={{ xs: 12, md: 2 }}>
                         <TextField
                             label="CEP"
@@ -229,7 +316,7 @@ export function FornecedorForm() {
                             variant="outlined"
                         />
                     </Grid>
-                    
+
                     <Grid size={{ xs: 12, md: 4 }}>
                         <TextField
                             label="Bairro"
@@ -315,6 +402,117 @@ export function FornecedorForm() {
                     </Grid>
                 </Grid>
             </Paper>
+
+            {isEditing && (
+                <Paper sx={{ p: 4, mt: 4 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" sx={{ borderBottom: 1, borderColor: 'divider', pb: 1, width: '100%' }}>
+                            Representantes
+                        </Typography>
+                        <Button
+                            variant="outlined"
+                            startIcon={<AddIcon />}
+                            onClick={() => setOpenRepModal(true)}
+                            size="small"
+                            sx={{ ml: -20, whiteSpace: 'nowrap' }} // Adjust to float right alongside border
+                        >
+                            Adicionar
+                        </Button>
+                    </Box>
+
+                    {representantes.length === 0 ? (
+                        <Typography color="text.secondary" variant="body2">Nenhum representante cadastrado.</Typography>
+                    ) : (
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Nome</TableCell>
+                                    <TableCell>Cargo</TableCell>
+                                    <TableCell>CPF</TableCell>
+                                    <TableCell>E-mail / Telefone</TableCell>
+                                    <TableCell align="right">Ações</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {representantes.map(rep => (
+                                    <TableRow key={rep.id}>
+                                        <TableCell>{rep.nome}</TableCell>
+                                        <TableCell>{rep.cargo || '-'}</TableCell>
+                                        <TableCell>{rep.cpf || '-'}</TableCell>
+                                        <TableCell>
+                                            <Typography variant="body2">{rep.email || '-'}</Typography>
+                                            <Typography variant="caption" color="text.secondary">{rep.telefone || '-'}</Typography>
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <IconButton color="error" size="small" onClick={() => handleRemoveRepresentante(rep.id)}>
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </Paper>
+            )}
+
+            {/* Modal Novo Representante */}
+            <Dialog open={openRepModal} onClose={() => setOpenRepModal(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Novo Representante</DialogTitle>
+                <DialogContent>
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid size={{ xs: 12 }}>
+                            <TextField
+                                label="Nome"
+                                fullWidth
+                                required
+                                value={newRep.nome}
+                                onChange={e => setNewRep({ ...newRep, nome: e.target.value })}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                                label="CPF"
+                                fullWidth
+                                value={newRep.cpf}
+                                onChange={e => setNewRep({ ...newRep, cpf: e.target.value })}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                                label="Cargo"
+                                fullWidth
+                                value={newRep.cargo}
+                                onChange={e => setNewRep({ ...newRep, cargo: e.target.value })}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                                label="E-mail"
+                                fullWidth
+                                type="email"
+                                value={newRep.email}
+                                onChange={e => setNewRep({ ...newRep, email: e.target.value })}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                                label="Telefone"
+                                fullWidth
+                                value={newRep.telefone}
+                                onChange={e => setNewRep({ ...newRep, telefone: e.target.value })}
+                            />
+                        </Grid>
+                    </Grid>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenRepModal(false)} disabled={savingRep}>Cancelar</Button>
+                    <Button variant="contained" onClick={handleAddRepresentante} disabled={savingRep}>
+                        {savingRep ? 'Salvando...' : 'Adicionar'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
         </Container>
     );
 }

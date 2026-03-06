@@ -12,4 +12,8 @@ fornecedorRoutes.put('/:id', authMiddleware, fornecedorController.update);
 fornecedorRoutes.delete('/:id', authMiddleware, fornecedorController.delete);
 fornecedorRoutes.patch('/:id/toggle-status', authMiddleware, fornecedorController.toggleStatus);
 
+// Representantes
+fornecedorRoutes.post('/:id/representantes', authMiddleware, fornecedorController.addRepresentante);
+fornecedorRoutes.delete('/:id/representantes/:repId', authMiddleware, fornecedorController.removeRepresentante);
+
 export { fornecedorRoutes };

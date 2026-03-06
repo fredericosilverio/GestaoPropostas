@@ -72,4 +72,26 @@ export class FornecedorController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    // --- Representantes ---
+
+    async addRepresentante(req: Request, res: Response) {
+        try {
+            const id = Number(req.params.id);
+            const representante = await fornecedorService.addRepresentante(id, req.body);
+            res.status(201).json(representante);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async removeRepresentante(req: Request, res: Response) {
+        try {
+            const repId = Number(req.params.repId);
+            await fornecedorService.removeRepresentante(repId);
+            res.status(204).send();
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }

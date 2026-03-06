@@ -37,6 +37,7 @@ import {
   Logout,
   Settings,
   AccountBalance as NaturezaIcon,
+  ContactPhone as ContactPhoneIcon
 } from '@mui/icons-material';
 import { styled, alpha } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
@@ -53,6 +54,7 @@ const navItems = [
   { path: '/pcas', label: 'Meus PCAs', icon: <AssignmentIcon /> },
   { path: '/demandas', label: 'Demandas', icon: <ListAltIcon /> },
   { path: '/fornecedores', label: 'Fornecedores', icon: <BusinessIcon /> },
+  { path: '/contatos', label: 'Contatos / Interações', icon: <ContactPhoneIcon /> },
   { path: '/audit', label: 'Auditoria', icon: <PolicyIcon /> },
   { path: '/usuarios', label: 'Usuários', icon: <PeopleIcon /> },
   { path: '/naturezas-despesa', label: 'Naturezas Despesa', icon: <NaturezaIcon /> },

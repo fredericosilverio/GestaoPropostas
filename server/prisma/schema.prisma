@@ -44,6 +44,7 @@ model Usuario {
   precos_cadastrados     Preco[]       @relation("PrecoCadastradoPor")
   anexos_upload          Anexo[]
   logs                   HistoricoLog[]
+  contatos_fornecedor    UsuarioContato[] // Relacionamento N:M
 
   @@map("usuario")
 }
@@ -100,6 +101,7 @@ model Pca {
 
   // Relations
   demandas Demanda[]
+  contatos ContatoFornecedor[]
 
   @@unique([ano, numero_pca, orgao, versao])
   @@map("pca")
@@ -150,6 +152,7 @@ model Demanda {
 
   // Relations
   itens Item[]
+  contatos ContatoFornecedor[]
 
   @@map("demanda")
 }
@@ -277,14 +280,76 @@ model Fornecedor {
   email_contato     String?
   telefone_contato  String?
   
+  objeto_fornecimento String?
+  situacao_cadastral  String   @default("ATIVO") // ATIVO, SUSPENSO, INABILITADO
+
   ativo           Boolean  @default(true)
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
   // Relations
   precos          Preco[]
+  representantes  RepresentanteFornecedor[]
+  contatos        ContatoFornecedor[]
 
   @@map("fornecedor")
+}
+
+model RepresentanteFornecedor {
+  id              Int        @id @default(autoincrement())
+  fornecedor_id   Int
+  fornecedor      Fornecedor @relation(fields: [fornecedor_id], references: [id], onDelete: Cascade)
+  nome            String
+  cpf             String?
+  cargo           String?
+  email           String?
+  telefone        String?
+  ativo           Boolean    @default(true)
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+
+  contatos        ContatoFornecedor[]
+
+  @@map("representante_fornecedor")
+}
+
+model ContatoFornecedor {
+  id                   Int        @id @default(autoincrement())
+  data_hora            DateTime
+  tipo_contato         String     // Reunião, e-mail, telefone, visita, videoconferência
+  local_meio           String
+  fornecedor_id        Int
+  fornecedor           Fornecedor @relation(fields: [fornecedor_id], references: [id])
+  representante_id     Int?
+  representante        RepresentanteFornecedor? @relation(fields: [representante_id], references: [id])
+  pauta                String
+  resultado            String
+  conflito_interesse   Boolean    // false (Ausência) true (Existência)
+  fonte_pesquisa       String?    // URL ou descrição da fonte de pesquisa usada
+  
+  pca_id               Int?
+  pca                  Pca?       @relation(fields: [pca_id], references: [id])
+  demanda_id           Int?
+  demanda              Demanda?   @relation(fields: [demanda_id], references: [id])
+
+  observacoes          String?
+  ativo                Boolean    @default(true)
+  created_at           DateTime   @default(now())
+  updated_at           DateTime   @updatedAt
+
+  servidores_envolvidos UsuarioContato[] // Relacionamento N:M
+
+  @@map("contato_fornecedor")
+}
+
+model UsuarioContato {
+  contato_id Int
+  usuario_id Int
+  contato    ContatoFornecedor @relation(fields: [contato_id], references: [id], onDelete: Cascade)
+  usuario    Usuario           @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@id([contato_id, usuario_id])
+  @@map("usuario_contato")
 }
 
 model HistoricoLog {
