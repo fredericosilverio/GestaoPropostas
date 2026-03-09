@@ -272,12 +272,12 @@ export class ContatoFornecedorController {
   <thead>
     <tr>
       <th style="width:17%">Empresa</th>
-      <th style="width:20%">Fonte de Pesquisa</th>
-      <th style="width:8%">Data</th>
-      <th style="width:6%">Horário</th>
-      <th style="width:11%">Tipo / Meio</th>
-      <th style="width:13%">Representante</th>
-      <th style="width:25%">Pauta</th>
+      <th style="width:23%">Justificativa / Fonte de Pesquisa</th>
+      <th style="width:7%">Data</th>
+      <th style="width:5%">Horário</th>
+      <th style="width:12%">Tipo / Meio</th>
+      <th style="width:12%">Representante</th>
+      <th style="width:24%">Situação</th>
     </tr>
   </thead>
   <tbody>
