@@ -232,7 +232,7 @@ export function ContatoForm() {
                 </Typography>
                 <Button
                     startIcon={<ArrowBackIcon />}
-                    onClick={() => navigate('/contatos')}
+                    onClick={() => navigate(-1)}
                     variant="outlined"
                     color="inherit"
                 >

@@ -16,8 +16,16 @@ import {
     Warning as WarningIcon,
     FileDownload as ReportIcon,
     Search as SearchIcon,
-    Clear as ClearIcon
+    Clear as ClearIcon,
+    Delete as DeleteIcon
 } from '@mui/icons-material';
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions
+} from '@mui/material';
 import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
 import type { GridColDef } from '@mui/x-data-grid';
 import { format, differenceInHours } from 'date-fns';
@@ -31,6 +39,8 @@ export function ContatoList() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchParams, setSearchParams] = useSearchParams();
+    const [contatoToDelete, setContatoToDelete] = useState<any | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const navigate = useNavigate();
     const { addToast } = useToast();
@@ -63,6 +73,22 @@ export function ContatoList() {
             addToast({ type: 'error', title: 'Erro', description: 'Erro ao carregar lista de contatos' });
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleDelete() {
+        if (!contatoToDelete) return;
+        setIsDeleting(true);
+        try {
+            await api.delete(`/contatos/${contatoToDelete.id}`);
+            addToast({ type: 'success', title: 'Sucesso', description: 'Registro de contato excluído com sucesso' });
+            setContatoToDelete(null);
+            loadContatos();
+        } catch (error) {
+            console.error('Erro ao excluir contato', error);
+            addToast({ type: 'error', title: 'Erro', description: 'Erro ao excluir registro de contato' });
+        } finally {
+            setIsDeleting(false);
         }
     }
 
@@ -134,6 +160,11 @@ export function ContatoList() {
                     icon={<EditIcon />}
                     label="Visualizar/Editar"
                     onClick={() => navigate(`/contatos/${params.id}`)}
+                />,
+                <GridActionsCellItem
+                    icon={<DeleteIcon color="error" />}
+                    label="Excluir"
+                    onClick={() => setContatoToDelete(params.row)}
                 />
             ]
         }
@@ -212,6 +243,24 @@ export function ContatoList() {
                     density="comfortable"
                 />
             </Card>
+
+            {/* Diálogo de Confirmação de Exclusão */}
+            <Dialog open={!!contatoToDelete} onClose={() => setContatoToDelete(null)}>
+                <DialogTitle>Excluir Registro de Contato</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Tem certeza que deseja excluir o registro de contato com o fornecedor <strong>{contatoToDelete?.fornecedor?.razao_social}</strong> realizado em {contatoToDelete && format(new Date(contatoToDelete.data_hora), "dd/MM/yyyy HH:mm")}?
+                        <br /><br />
+                        Esta ação não pode ser desfeita.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setContatoToDelete(null)} color="inherit" disabled={isDeleting}>Cancelar</Button>
+                    <Button onClick={handleDelete} color="error" variant="contained" disabled={isDeleting}>
+                        {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

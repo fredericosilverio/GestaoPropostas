@@ -38,6 +38,7 @@ import { FileUploader } from '../../components/FileUploader';
 import { AttachmentList } from '../../components/AttachmentList';
 import { StatusTimeline } from '../../components/StatusTimeline';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
+import { DemandaContatos } from './DemandaContatos';
 import { useToast } from '../../contexts/ToastContext';
 
 interface Item {
@@ -220,10 +221,13 @@ export function DemandaDetail() {
                             variant="outlined"
                             color="secondary"
                             startIcon={<ContactPhoneIcon />}
-                            onClick={() => navigate(`/contatos/new?demandaId=${id}${demanda.pca ? `&pcaId=${demanda.pca.id}` : ''}`)}
+                            onClick={() => {
+                                const element = document.getElementById('contatos-section');
+                                element?.scrollIntoView({ behavior: 'smooth' });
+                            }}
                             size="small"
                         >
-                            Registrar Contato
+                            Contatos
                         </Button>
                         <Button
                             variant="contained"
@@ -364,6 +368,11 @@ export function DemandaDetail() {
                     </Table>
                 </TableContainer>
             </Paper>
+
+            {/* Interações e Contatos */}
+            <Box id="contatos-section">
+                <DemandaContatos demandaId={Number(id)} pcaId={demanda.pca?.id} />
+            </Box>
 
             {/* Observações Gerais da Análise */}
             <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
