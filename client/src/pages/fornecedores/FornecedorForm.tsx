@@ -25,7 +25,7 @@ import {
     DialogContent,
     DialogActions
 } from '@mui/material';
-import { Save as SaveIcon, ArrowBack as ArrowBackIcon, Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Save as SaveIcon, ArrowBack as ArrowBackIcon, Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 import { api } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
@@ -67,6 +67,7 @@ export function FornecedorForm() {
     const [openRepModal, setOpenRepModal] = useState(false);
     const [newRep, setNewRep] = useState({ nome: '', cpf: '', cargo: '', email: '', telefone: '' });
     const [savingRep, setSavingRep] = useState(false);
+    const [editingRepId, setEditingRepId] = useState<number | null>(null);
 
     useEffect(() => {
         if (isEditing) {
@@ -144,7 +145,25 @@ export function FornecedorForm() {
         }
     }
 
-    async function handleAddRepresentante() {
+    function handleOpenAddModal() {
+        setEditingRepId(null);
+        setNewRep({ nome: '', cpf: '', cargo: '', email: '', telefone: '' });
+        setOpenRepModal(true);
+    }
+
+    function handleOpenEditModal(rep: any) {
+        setEditingRepId(rep.id);
+        setNewRep({
+            nome: rep.nome || '',
+            cpf: rep.cpf || '',
+            cargo: rep.cargo || '',
+            email: rep.email || '',
+            telefone: rep.telefone || ''
+        });
+        setOpenRepModal(true);
+    }
+
+    async function handleSaveRepresentante() {
         if (!newRep.nome) {
             addToast({ type: 'warning', title: 'Atenção', description: 'Nome do representante é obrigatório' });
             return;
@@ -152,13 +171,19 @@ export function FornecedorForm() {
 
         setSavingRep(true);
         try {
-            await api.post(`/fornecedores/${id}/representantes`, newRep);
-            addToast({ type: 'success', title: 'Sucesso', description: 'Representante adicionado' });
+            if (editingRepId) {
+                await api.put(`/fornecedores/${id}/representantes/${editingRepId}`, newRep);
+                addToast({ type: 'success', title: 'Sucesso', description: 'Representante atualizado' });
+            } else {
+                await api.post(`/fornecedores/${id}/representantes`, newRep);
+                addToast({ type: 'success', title: 'Sucesso', description: 'Representante adicionado' });
+            }
             setOpenRepModal(false);
             setNewRep({ nome: '', cpf: '', cargo: '', email: '', telefone: '' });
+            setEditingRepId(null);
             loadFornecedor(); // reload data
         } catch (error: any) {
-            addToast({ type: 'error', title: 'Erro', description: 'Falha ao adicionar representante' });
+            addToast({ type: 'error', title: 'Erro', description: `Falha ao ${editingRepId ? 'atualizar' : 'adicionar'} representante` });
         } finally {
             setSavingRep(false);
         }
@@ -412,7 +437,7 @@ export function FornecedorForm() {
                         <Button
                             variant="outlined"
                             startIcon={<AddIcon />}
-                            onClick={() => setOpenRepModal(true)}
+                            onClick={handleOpenAddModal}
                             size="small"
                             sx={{ ml: -20, whiteSpace: 'nowrap' }} // Adjust to float right alongside border
                         >
@@ -444,6 +469,9 @@ export function FornecedorForm() {
                                             <Typography variant="caption" color="text.secondary">{rep.telefone || '-'}</Typography>
                                         </TableCell>
                                         <TableCell align="right">
+                                            <IconButton color="primary" size="small" onClick={() => handleOpenEditModal(rep)}>
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
                                             <IconButton color="error" size="small" onClick={() => handleRemoveRepresentante(rep.id)}>
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
@@ -458,7 +486,7 @@ export function FornecedorForm() {
 
             {/* Modal Novo Representante */}
             <Dialog open={openRepModal} onClose={() => setOpenRepModal(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Novo Representante</DialogTitle>
+                <DialogTitle>{editingRepId ? 'Editar Representante' : 'Novo Representante'}</DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} sx={{ mt: 1 }}>
                         <Grid size={{ xs: 12 }}>
@@ -507,8 +535,8 @@ export function FornecedorForm() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setOpenRepModal(false)} disabled={savingRep}>Cancelar</Button>
-                    <Button variant="contained" onClick={handleAddRepresentante} disabled={savingRep}>
-                        {savingRep ? 'Salvando...' : 'Adicionar'}
+                    <Button variant="contained" onClick={handleSaveRepresentante} disabled={savingRep}>
+                        {savingRep ? 'Salvando...' : editingRepId ? 'Atualizar' : 'Adicionar'}
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -187,6 +187,9 @@ export class ContatoFornecedorController {
                     }
                 }
 
+                // Sort contatos by date and time (ascending)
+                contatos.sort((a: any, b: any) => new Date(a.data_hora).getTime() - new Date(b.data_hora).getTime());
+
                 // Group contatos by fornecedor
                 const grouped: Record<string, { nome: string; cnpj: string; contatos: any[] }> = {};
                 contatos.forEach((c: any) => {
@@ -220,7 +223,7 @@ export class ContatoFornecedorController {
                             <td class="fonte-col">${c.fonte_pesquisa || '\u2014'}</td>
                             <td class="center">${moment(c.data_hora).utcOffset(-3).format('DD/MM/YYYY')}</td>
                             <td class="center">${moment(c.data_hora).utcOffset(-3).format('HH:mm')}</td>
-                            <td>${c.tipo_contato}<br/><small>${c.local_meio}</small></td>
+                            <td>${(c.tipo_contato || '').charAt(0).toUpperCase() + (c.tipo_contato || '').slice(1).toLowerCase()}<br/><small>${c.local_meio}</small></td>
                             <td>${c.representante ? c.representante.nome : '\u2014'}</td>
                             <td class="pauta-col">${c.pauta || '\u2014'}</td>
                         </tr>
@@ -250,10 +253,10 @@ export class ContatoFornecedorController {
   .info-table .label { background: #f5f5f5; font-weight: bold; width: 18%; color: #333; }
 
   /* ===== DATA TABLE ===== */
-  .main-table { width:100%; border-collapse:collapse; font-size:8pt; }
+  .main-table { width:100%; border-collapse:collapse; font-size:7.5pt; }
   .main-table thead tr { background:#1e3a5f; color:#fff; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
   .main-table th { padding:5pt 4pt; border:1px solid #1e3a5f; text-align:center; font-size:7.5pt; font-weight:bold; }
-  .main-table td { padding:4pt; border:1px solid #ccc; vertical-align:top; }
+  .main-table td { padding:4pt; border:1px solid #ccc; vertical-align:middle; }
   .center { text-align:center; }
   .fornecedor-cell { font-size:8pt; background:#eef2f7; font-weight:normal; print-color-adjust:exact; -webkit-print-color-adjust:exact; vertical-align:middle !important; }
   .cnpj { font-size:7pt; color:#555; }
@@ -286,9 +289,6 @@ export class ContatoFornecedorController {
   </tbody>
 </table>
 
-<div class="footer-note">
-  Documento gerado em atendimento ao Art. 6º, VI, Dec. Est. nº 9.900/2021.
-</div>
 </body>
 </html>`;
 
@@ -301,15 +301,16 @@ export class ContatoFornecedorController {
                     margin: { top: '48mm', right: '15mm', bottom: '15mm', left: '15mm' },
                     printBackground: true,
                     displayHeaderFooter: true,
+                    footerTemplate: '<span></span>',
                     headerTemplate: `
                         <style>
                             .header-table { width: 100%; margin: 0 15mm; margin-top: 8mm; border-collapse: collapse; table-layout: fixed; font-family: 'Times New Roman', Georgia, serif; line-height: 1.1; }
                             .header-table td { border: 1px solid #ccc; vertical-align: middle; text-align: center; padding: 3pt; }
                             .header-logo-cell { width: 22%; padding: 5pt !important; }
-                            .header-logo-cell .coord-nome { font-size: 6pt; display: block; margin-top: 3pt; color: #444; font-weight: normal; }
-                            .header-title-main { font-size: 11pt; font-weight: bold; text-transform: uppercase; }
-                            .header-subtitle { font-size: 8pt; font-weight: bold; background: #fcfcfc; }
-                            .header-meta-grid { padding: 0 !important; }
+                            .header-logo-cell .coord-nome { font-size:5.5pt; display: block; margin-top: 0pt; color: #444; font-weight: normal; font-family: Arial, sans-serif; }
+                            .header-title-main { font-size: 8pt; font-weight: bold; text-transform: uppercase; height: 32pt; }
+                            .header-subtitle { font-size: 8pt; font-weight: bold; background: #fcfcfc; height: 16pt; }
+                            .header-meta-grid { padding: 0 !important; height: 16pt; }
                             .header-meta-table { width: 100%; border-collapse: collapse; border: none; }
                             .header-meta-table td { border: none; border-right: 1px solid #ccc; font-size: 7.5pt; padding: 2pt !important; }
                             .header-meta-table td:last-child { border-right: none; }
@@ -318,13 +319,13 @@ export class ContatoFornecedorController {
                         <table class="header-table">
                             <tr>
                                 <td rowspan="3" class="header-logo-cell">
-                                    ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="width:130px;height:auto;"/>` : ''}
+                                    ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="width:150px;height:auto;"/>` : ''}
                                     <span class="coord-nome">Coordenadoria de Contratos e Aquisições de TIC</span>
                                 </td>
-                                <td class="header-title-main">Controle de Fornecedor</td>
+                                <td class="header-title-main">Controle de Fornecedores</td>
                             </tr>
                             <tr>
-                                <td class="header-subtitle">Registro de Interações e Contatos com Fornecedores — Decreto Estadual nº 9.900/2021</td>
+                                <td class="header-subtitle">Processo de Planejamento de Aquisições e de Contratações de Soluções de TIC</td>
                             </tr>
                             <tr>
                                 <td class="header-meta-grid">
@@ -339,7 +340,6 @@ export class ContatoFornecedorController {
                             </tr>
                         </table>
                     `,
-                    footerTemplate: '<div style="font-size: 8px; text-align: center; width: 100%; color: #666; padding-bottom: 5mm;">Controle de Fornecedor</div>'
                 });
                 await browser.close();
 

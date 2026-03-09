@@ -121,4 +121,17 @@ export class FornecedorService {
             where: { id }
         });
     }
+
+    async updateRepresentante(repId: number, data: any) {
+        return prisma.representanteFornecedor.update({
+            where: { id: repId },
+            data: {
+                nome: data.nome,
+                cpf: data.cpf,
+                cargo: data.cargo,
+                email: data.email,
+                telefone: data.telefone
+            }
+        });
+    }
 }

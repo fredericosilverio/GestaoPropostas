@@ -94,4 +94,14 @@ export class FornecedorController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    async updateRepresentante(req: Request, res: Response) {
+        try {
+            const repId = Number(req.params.repId);
+            const representante = await fornecedorService.updateRepresentante(repId, req.body);
+            res.json(representante);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }
