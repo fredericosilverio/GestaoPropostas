@@ -89,35 +89,20 @@ export class BudgetDistributionReportService {
             };
         });
 
-        // Group by natureza_despesa for second table
-        const naturezaGroupMap = new Map<string, any>();
-        itensComValores.forEach((item: any) => {
-            const key = item.natureza_descricao;
-            if (!naturezaGroupMap.has(key)) {
-                naturezaGroupMap.set(key, {
-                    descricao: key,
-                    valor_total: 0,
-                    natureza_codigo: item.natureza_codigo,
-                    pct_1grau: item.pct_1grau,
-                    pct_2grau: item.pct_2grau,
-                    pct_area_meio: item.pct_area_meio,
-                    valor_1grau: 0,
-                    valor_2grau: 0,
-                    valor_area_meio: 0,
-                    tipo_despesa: item.tipo_despesa_label,
-                    forma_pagamento: item.forma_pagamento_label,
-                    itens: []
-                });
-            }
-            const group = naturezaGroupMap.get(key)!;
-            group.valor_total += item.valor_total_calculado;
-            group.valor_1grau += item.valor_1grau;
-            group.valor_2grau += item.valor_2grau;
-            group.valor_area_meio += item.valor_area_meio;
-            group.itens.push(item);
-        });
-
-        const naturezaGroups = Array.from(naturezaGroupMap.values());
+        // Create list of items for second table (no longer grouped by natureza_despesa)
+        const naturezaGroups = itensComValores.map((item: any) => ({
+            descricao: item.natureza_descricao,
+            valor_total: item.valor_total_calculado,
+            natureza_codigo: item.natureza_codigo,
+            pct_1grau: item.pct_1grau,
+            pct_2grau: item.pct_2grau,
+            pct_area_meio: item.pct_area_meio,
+            valor_1grau: item.valor_1grau,
+            valor_2grau: item.valor_2grau,
+            valor_area_meio: item.valor_area_meio,
+            tipo_despesa: item.tipo_despesa_label,
+            forma_pagamento: item.forma_pagamento_label
+        }));
 
         // Load logo
         let logoBase64 = '';
