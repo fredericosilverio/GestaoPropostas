@@ -322,7 +322,7 @@ export class ContatoFornecedorController {
                                     ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" style="width:150px;height:auto;"/>` : ''}
                                     <span class="coord-nome">Coordenadoria de Contratos e Aquisições de TIC</span>
                                 </td>
-                                <td class="header-title-main">Controle de Fornecedores</td>
+                                <td class="header-title-main">ANÁLISE DE MERCADO<br/>Controle de Fornecedor</td>
                             </tr>
                             <tr>
                                 <td class="header-subtitle">Processo de Planejamento de Aquisições e de Contratações de Soluções de TIC</td>
